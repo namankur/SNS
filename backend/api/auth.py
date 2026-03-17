@@ -9,7 +9,7 @@ from database import get_db
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-JWT_SECRET = os.getenv("JWT_SECRET_KEY", "fallback_secret")
+JWT_SECRET = os.getenv("JWT_SECRET_KEY", "fallback_secret_must_be_at_least_32_bytes_long_for_hs256")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
