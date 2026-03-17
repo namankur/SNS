@@ -68,7 +68,7 @@ export default function Register() {
             });
             const data = await res.json();
             if (res.ok) {
-                navigate('/invite');
+                navigate('/invite', { state: data });
             } else {
                 setError(data.detail || 'Failed to setup Dear One');
             }

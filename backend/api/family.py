@@ -59,6 +59,9 @@ async def link_family(req: LinkFamilyRequest, caller_id: str = Depends(get_curre
         f"Koi sawaal hai toh yahan reply karein."
     )
 
+    invite_status = "no_twilio_client"
+    invite_error = None
+
     if twilio_client:
         try:
             # Send via SMS as fallback or explicitly if WhatsApp Number not set
@@ -70,15 +73,26 @@ async def link_family(req: LinkFamilyRequest, caller_id: str = Depends(get_curre
                 from_number = f"whatsapp:{TWILIO_WHATSAPP_NUMBER}"
                 to_number = f"whatsapp:{dear_phone}"
 
-            twilio_client.messages.create(
+            msg = twilio_client.messages.create(
                 body=message_body,
                 from_=from_number,
                 to=to_number
             )
+            invite_status = "sent"
+            print(f"WhatsApp invite sent! SID: {msg.sid}")
         except Exception as e:
+            invite_status = "failed"
+            invite_error = str(e)
             print(f"Error sending WhatsApp/SMS invite: {e}")
 
-    return {"status": "success", "message": f"Invite sent to {req.dear_one_phone}", "dear_one_id": dear_one_id}
+    return {
+        "status": "success", 
+        "message": f"Dear one linked successfully",
+        "dear_one_id": dear_one_id,
+        "invite_status": invite_status,
+        "invite_error": invite_error,
+        "message_body": message_body
+    }
 
 @router.get("/check/{dear_one_nickname}")
 async def manual_check(dear_one_nickname: str):
