@@ -2,7 +2,6 @@ import os
 from datetime import datetime, timedelta
 import jwt
 from fastapi import APIRouter, HTTPException, Depends
-from twilio.rest import Client
 from models import UserCreate, VerifyOTPRequest
 from database import get_db
 from api.deps import JWT_SECRET, JWT_ALGORITHM, twilio_client, TWILIO_SMS_NUMBER, get_current_user

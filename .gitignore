@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
 venv/
+test_env/
+backend/test_env/
 
 # Environment
 .env
