@@ -36,3 +36,14 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+@app.get("/debug/twilio")
+async def debug_twilio():
+    """Temporary debug endpoint to check Twilio config. Remove in production."""
+    return {
+        "TWILIO_ACCOUNT_SID_set": bool(os.getenv("TWILIO_ACCOUNT_SID")),
+        "TWILIO_AUTH_TOKEN_set": bool(os.getenv("TWILIO_AUTH_TOKEN")),
+        "TWILIO_SMS_NUMBER": os.getenv("TWILIO_SMS_NUMBER", "NOT SET"),
+        "TWILIO_WHATSAPP_NUMBER": os.getenv("TWILIO_WHATSAPP_NUMBER", "NOT SET"),
+        "JWT_SECRET_KEY_length": len(os.getenv("JWT_SECRET_KEY", "")),
+    }
