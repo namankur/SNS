@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from models import LinkFamilyRequest
 from database import get_db
-from api.auth import get_current_user, twilio_client, TWILIO_SMS_NUMBER, TWILIO_WHATSAPP_NUMBER
+from api.deps import get_current_user, twilio_client, TWILIO_SMS_NUMBER, TWILIO_WHATSAPP_NUMBER
 
 router = APIRouter(prefix="/api/family", tags=["family"])
 

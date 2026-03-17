@@ -11,7 +11,7 @@ export default function Invite() {
 
                 <div className="bg-green-50 text-green-800 p-4 rounded-xl text-left text-sm space-y-2">
                     <p><strong>Preview of message sent:</strong></p>
-                    <p>"Namaste Savitri ji 🙏<br />Rahul ne aapke liye Safe & Sound setup kiya hai. Yeh aapko track nahi karta — sirf aapke phone ki basic activity dekhta hai.<br /><br />App install karne ke liye:<br />[safeandsound.in/app/download]<br />Koi sawaal? Reply karein."</p>
+                    <p>"Namaste Savitri ji 🙏<br />Rahul ne aapke liye Safe & Sound setup kiya hai. Yeh aapko track nahi karta — sirf aapke phone ki basic activity dekhta hai.<br /><br />App install karne ke liye:<br /><a href="https://awqhrmnfxsdqospuiamm.supabase.co/storage/v1/object/public/releases/app-debug.apk" className="text-blue-600 underline">Download App</a><br />Koi sawaal? Reply karein."</p>
                 </div>
 
                 <button
