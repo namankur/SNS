@@ -7,10 +7,17 @@ export default function Dashboard() {
 
     useEffect(() => {
         async function fetchDearOnes() {
-            // In production, get current logged in user ID
-            // Hardcoded dummy caller ID for demo structure
-            const callerId = '00000000-0000-0000-0000-000000000000';
-
+            let callerId = '00000000-0000-0000-0000-000000000000';
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    callerId = payload.sub;
+                } catch (e) {
+                    console.error("Invalid token format");
+                }
+            }
+            
             const { data, error } = await supabase
                 .from('caller_dear_one_links')
                 .select(`

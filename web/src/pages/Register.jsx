@@ -54,9 +54,28 @@ export default function Register() {
     };
 
     const handleSetup = async () => {
-        // In a real app we'd call /api/family/link with the JWT bearer token for security
-        // that creates the DB link in Supabase
-        navigate('/invite');
+        setLoading(true);
+        setError('');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/family/link`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ dear_one_phone: dearOnePhone, nickname: dearOneName })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                navigate('/invite');
+            } else {
+                setError(data.detail || 'Failed to setup Dear One');
+            }
+        } catch (err) {
+            setError('Network error. Failed to setup Dear One.');
+        }
+        setLoading(false);
     };
 
     const renderStep = () => {
@@ -95,7 +114,9 @@ export default function Register() {
                             <option value="Dadi">Dadi</option>
                             <option value="Other">Other</option>
                         </select>
-                        <button onClick={handleSetup} className="w-full bg-orange-500 text-white p-4 rounded-xl font-bold">Save & Invite</button>
+                        <button onClick={handleSetup} disabled={loading} className="w-full bg-orange-500 text-white p-4 rounded-xl font-bold">
+                            {loading ? 'Sending Invite...' : 'Save & Invite'}
+                        </button>
                     </div>
                 );
             default: return null;
