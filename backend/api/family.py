@@ -70,7 +70,9 @@ async def link_family(req: LinkFamilyRequest, caller_id: str = Depends(get_curre
             
             # If WhatsApp is targeted and configured
             if TWILIO_WHATSAPP_NUMBER:
-                from_number = f"whatsapp:{TWILIO_WHATSAPP_NUMBER}"
+                # Strip any existing whatsapp: prefix to avoid double-prefix bug
+                wa_number = TWILIO_WHATSAPP_NUMBER.replace("whatsapp:", "")
+                from_number = f"whatsapp:{wa_number}"
                 to_number = f"whatsapp:{dear_phone}"
 
             msg = twilio_client.messages.create(
