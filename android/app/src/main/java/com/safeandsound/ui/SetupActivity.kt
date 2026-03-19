@@ -120,6 +120,8 @@ class SetupActivity : ComponentActivity() {
     private fun requestBasePermissions() {
         val permissionsToRequest = mutableListOf<String>()
         
+        permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             permissionsToRequest.add(Manifest.permission.ACTIVITY_RECOGNITION)
         }

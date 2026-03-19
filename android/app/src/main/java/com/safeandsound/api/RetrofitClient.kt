@@ -46,7 +46,12 @@ data class SignalPacket(
     @SerializedName("battery_level") val batteryLevel: Int,
     @SerializedName("is_charging") val isCharging: Boolean,
     @SerializedName("network_type") val networkType: String,
-    @SerializedName("dnd_active") val dndActive: Boolean
+    @SerializedName("dnd_active") val dndActive: Boolean,
+    @SerializedName("ringer_mode") val ringerMode: String,
+    @SerializedName("ringer_volume") val ringerVolume: Int,
+    @SerializedName("is_headphone_plugged") val isHeadphonePlugged: Boolean,
+    @SerializedName("wifi_ssid") val wifiSsid: String,
+    @SerializedName("last_app_used") val lastAppUsed: String
 )
 
 data class SignalResponse(
