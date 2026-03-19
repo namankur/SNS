@@ -2,6 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from models import LinkFamilyRequest
 from database import get_db
 from api.deps import get_current_user, send_sms_via_textbee, TEXTBEE_API_KEY
+from core.sms_bot import handle_incoming_sms
+from core.ai_engine import generate_response
+from core.routine_engine import calculate_deviation_score
+from datetime import datetime
 
 router = APIRouter(prefix="/api/family", tags=["family"])
 
@@ -82,14 +86,57 @@ async def link_family(req: LinkFamilyRequest, caller_id: str = Depends(get_curre
     }
 
 @router.get("/check/{dear_one_nickname}")
-async def manual_check(dear_one_nickname: str):
+async def manual_check(dear_one_nickname: str, caller_id: str = Depends(get_current_user)):
     """
-    Called when caller asks 'Maa?' via SMS (or via UI).
-    Enforce cooldown.
-    Calculate deviation score.
-    Call Claude API.
+    Called when caller clicks 'Check Now via SMS' in the UI.
     """
-    return {"status": "success", "message": "Simulated checking response."}
+    db = get_db()
+    if not db:
+        raise HTTPException(status_code=500, detail="Database not connected")
+        
+    # 1. Lookup the link to get dear_one_id
+    link_res = db.table("caller_dear_one_links").select("*").eq("caller_id", caller_id).ilike("nickname", dear_one_nickname).execute()
+    if not link_res.data:
+        raise HTTPException(status_code=404, detail=f"No link found for {dear_one_nickname}")
+        
+    link = link_res.data[0]
+    dear_one_id = link['dear_one_id']
+    
+    # 2. Process Request via AI (Mirroring logic in sms_bot.py)
+    score = calculate_deviation_score(user_id=dear_one_id)
+    signals_res = db.table("signals").select("*").eq("user_id", dear_one_id).order("timestamp", desc=True).limit(3).execute()
+    routine_res = db.table("routine_profiles").select("*").eq("user_id", dear_one_id).execute()
+    
+    signals = signals_res.data if signals_res.data else []
+    routine = routine_res.data[0] if routine_res.data else {}
+    
+    ai_response = generate_response(
+        user_id=dear_one_id,
+        dear_one_nickname=dear_one_nickname,
+        language="hindi",
+        signals=signals,
+        routine_profile=routine,
+        deviation_score=score,
+        current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    )
+    
+    # 3. Record request
+    db.table("check_requests").insert({
+        "caller_id": caller_id,
+        "dear_one_id": dear_one_id,
+        "response_generated": ai_response,
+        "deviation_score": score,
+        "tier": "free"
+    }).execute()
+    
+    # 4. Send SMS to Caller
+    caller_res = db.table("users").select("phone_number").eq("user_id", caller_id).execute()
+    if caller_res.data:
+        caller_phone = caller_res.data[0]['phone_number']
+        if TEXTBEE_API_KEY:
+            await send_sms_via_textbee([caller_phone], ai_response)
+            
+    return {"status": "success", "message": ai_response}
 
 @router.get("/dear-one/check-log")
 async def get_check_log():
