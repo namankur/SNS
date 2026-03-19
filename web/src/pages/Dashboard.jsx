@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 
 export default function Dashboard() {
     const [dearOnes, setDearOnes] = useState([]);
+    const [callerName, setCallerName] = useState('...');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -18,6 +19,17 @@ export default function Dashboard() {
                 }
             }
             
+            // 1. Get caller's own name
+            const { data: userData } = await supabase
+                .from('users')
+                .select('name')
+                .eq('user_id', callerId)
+                .single();
+            if (userData?.name) {
+                setCallerName(userData.name);
+            }
+
+            // 2. Get dear ones
             const { data, error } = await supabase
                 .from('caller_dear_one_links')
                 .select(`
@@ -30,10 +42,11 @@ export default function Dashboard() {
             if (data) {
                 setDearOnes(data.map(link => ({
                     id: link.dear_one_id,
-                    name: `${link.users.name} (${link.nickname})`,
+                    name: `${link.users.name || 'User'} (${link.nickname})`,
+                    nickname: link.nickname,
                     status: 'Active',
-                    lastSync: 'Fetching...',
-                    score: '?'
+                    lastSync: 'Status available on WhatsApp',
+                    score: 'Secured ✅'
                 })));
             }
             setLoading(false);
@@ -47,7 +60,7 @@ export default function Dashboard() {
                 <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
                     <div>
                         <h1 className="text-xl font-bold">Safe & Sound</h1>
-                        <p className="text-sm text-gray-500">Welcome back, Rahul</p>
+                        <p className="text-sm text-gray-500">Welcome back, {callerName}</p>
                     </div>
                     <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-bold">Free Tier</div>
                 </div>
@@ -69,8 +82,10 @@ export default function Dashboard() {
                                 </div>
 
                                 <a
-                                    href="https://wa.me/something"
-                                    className="block text-center w-full bg-orange-500 text-white p-3 rounded-xl font-bold shadow-sm"
+                                    href={`https://wa.me/14155238886?text=${encodeURIComponent(person.nickname)}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="block text-center w-full bg-orange-500 hover:bg-orange-600 text-white p-3 rounded-xl font-bold shadow-sm transition-colors"
                                 >
                                     Check Now via WhatsApp
                                 </a>
