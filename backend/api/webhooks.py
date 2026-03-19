@@ -12,12 +12,16 @@ async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTask
     """
     try:
         json_data = await request.json()
-    except Exception:
+        print(f"DEBUG: Webhook received: {json_data}")
+    except Exception as e:
+        print(f"DEBUG: Webhook JSON parse error: {e}")
         return {"status": "error", "message": "Invalid JSON body"}
 
     sender = json_data.get("sender", "").strip()
     body = json_data.get("message", "").strip()
     event = json_data.get("webhookEvent", "")
+
+    print(f"DEBUG: Incoming SMS from {sender}: {body} (Event: {event})")
 
     if event != "MESSAGE_RECEIVED":
         return {"status": "ignored", "message": f"Unhandled event: {event}"}
