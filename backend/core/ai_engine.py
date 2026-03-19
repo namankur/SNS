@@ -71,15 +71,20 @@ def generate_response(
     battery = latest_signal.get('battery_level', 'unknown')
     charging_status = "Charging" if latest_signal.get('is_charging') else "Not Charging"
     network_raw = latest_signal.get('network_type', 'unknown')
-    wifi_ssid = latest_signal.get('wifi_ssid', '')
-    network = f"{network_raw} ({wifi_ssid})" if wifi_ssid else network_raw
+    is_wifi = latest_signal.get('is_wifi', False)
+    network = f"Wi-Fi ({network_raw})" if is_wifi else network_raw
     dnd_status = "ON (Do Not Disturb)" if latest_signal.get('dnd_active') else "OFF (Ringer On)"
     last_interaction = latest_signal.get('last_interaction_time', 'N/A')
     synced_at = latest_signal.get('synced_at', 'unknown')
     ringer_mode = latest_signal.get('ringer_mode', 'NORMAL')
     ringer_vol = latest_signal.get('ringer_volume', 50)
     headphones = "Plugged in / Bluetooth" if latest_signal.get('is_headphone_plugged') else "Disconnected"
-    last_app = latest_signal.get('last_app_used', 'N/A')
+    
+    # New privacy-safe signals
+    light = latest_signal.get('ambient_light', 'NORMAL')
+    orientation = latest_signal.get('phone_orientation', 'FLAT')
+    proximity = latest_signal.get('proximity', 'FAR')
+    app_cat = latest_signal.get('app_category', 'NONE')
     
     # Check if this is a missed call fallback situation
     missed_call_time = None
@@ -105,12 +110,14 @@ def generate_response(
     walk_days = ", ".join(routine_profile.get('walk_days', ['MON','WED','FRI'])) if routine_profile else 'MON, WED, FRI'
     
     if ai_offline:
+        app_info = f"App Category: {app_cat}" if app_cat != "NONE" else "No active app"
+        context_info = f"Room: {light}, Mode: {orientation}"
         return (
             f"Status Update for {dear_one_nickname}:\n\n"
             f"Last Synced: {synced_at}\n"
             f"Phone active: {last_active_mins} mins ago\n"
-            f"App: {last_app}\n"
-            f"Activity: {movement}\n"
+            f"Context: {context_info}\n"
+            f"Activity: {movement} ({app_info})\n"
             f"Battery: {battery}% ({charging_status})\n"
             f"Network: {network}\n"
             f"Ringer/DND: {ringer_mode} ({ringer_vol}%)\n"
@@ -154,10 +161,14 @@ Deviation from normal: {score_label} ({deviation_score})
 
 Latest signals:
 - Phone last active: {last_active_mins} minutes ago
+- Activity category: {app_cat}
+- Room brightness: {light}
+- Phone orientation: {orientation}
+- Proximity: {proximity}
 - Current movement: {movement}
 - Battery: {battery}% {charging_status}
 - Internet: {network}
-- Phone silenced: {dnd}
+- Phone silenced: {dnd_status}
 
 Their normal routine:
 - Usually wakes: {wake_time}

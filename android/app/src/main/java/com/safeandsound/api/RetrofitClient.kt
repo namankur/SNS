@@ -38,20 +38,23 @@ interface ApiService {
 }
 
 data class SignalPacket(
-    @SerializedName("phone_number") val phoneNumber: String, // MVP logic: matching by phone number
+    @SerializedName("phone_number") val phoneNumber: String, 
     @SerializedName("timestamp") val timestamp: String,
     @SerializedName("screen_active_last_mins") val screenActiveLastMins: Int,
     @SerializedName("movement_type") val movementType: String,
     @SerializedName("last_interaction_time") val lastInteractionTime: String,
     @SerializedName("battery_level") val batteryLevel: Int,
     @SerializedName("is_charging") val isCharging: Boolean,
+    @SerializedName("is_wifi") val isWifi: Boolean,
     @SerializedName("network_type") val networkType: String,
     @SerializedName("dnd_active") val dndActive: Boolean,
     @SerializedName("ringer_mode") val ringerMode: String,
     @SerializedName("ringer_volume") val ringerVolume: Int,
     @SerializedName("is_headphone_plugged") val isHeadphonePlugged: Boolean,
-    @SerializedName("wifi_ssid") val wifiSsid: String,
-    @SerializedName("last_app_used") val lastAppUsed: String
+    @SerializedName("ambient_light") val ambientLight: String,
+    @SerializedName("phone_orientation") val phoneOrientation: String,
+    @SerializedName("proximity") val proximity: String,
+    @SerializedName("app_category") val appCategory: String
 )
 
 data class SignalResponse(

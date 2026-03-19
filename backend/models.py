@@ -29,13 +29,16 @@ class SignalCreate(BaseModel):
     last_interaction_time: str = ""
     battery_level: int = 100
     is_charging: bool = False
+    is_wifi: bool = True
     network_type: str = "WIFI"
     dnd_active: bool = False
     ringer_mode: str = "NORMAL"
     ringer_volume: int = 50
     is_headphone_plugged: bool = False
-    wifi_ssid: str = ""
-    last_app_used: str = ""
+    ambient_light: str = "NORMAL" # DARK, NORMAL, BRIGHT
+    phone_orientation: str = "FLAT" # FLAT, TILTED
+    proximity: str = "FAR" # NEAR, FAR
+    app_category: str = "NONE" # SOCIAL, COMMUNICATION, UTILITY, etc.
 
 class LinkFamilyRequest(BaseModel):
     dear_one_phone: str

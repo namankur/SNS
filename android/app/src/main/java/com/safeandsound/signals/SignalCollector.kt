@@ -9,21 +9,33 @@ import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.BatteryManager
 import android.os.PowerManager
-import android.app.usage.UsageEvents
-import android.app.usage.UsageStatsManager
-import kotlinx.coroutines.*
-import com.safeandsound.api.RetrofitClient
-import com.safeandsound.api.SignalPacket
-import com.safeandsound.utils.SharedPrefsHelper
-import java.text.SimpleDateFormat
-import java.util.*
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 
-class SignalCollector(private val context: Context) {
+class SignalCollector(private val context: Context) : SensorEventListener {
     
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
     
+    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private var lastLightValue: Float = 100f
+    private var lastProximityValue: Float = 5f
+    private var lastAccelValues = FloatArray(3) { 0f }
+    
     fun startCollecting() {
+        // Register sensors
+        sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+        sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+        
         scope.launch {
             while (isActive) {
                 collectAndSend()
@@ -33,7 +45,34 @@ class SignalCollector(private val context: Context) {
     }
     
     fun stopCollecting() {
+        sensorManager.unregisterListener(this)
         job.cancel()
+    }
+    
+    override fun onSensorChanged(event: SensorEvent?) {
+        event ?: return
+        when (event.sensor.type) {
+            Sensor.TYPE_LIGHT -> lastLightValue = event.values[0]
+            Sensor.TYPE_PROXIMITY -> lastProximityValue = event.values[0]
+            Sensor.TYPE_ACCELEROMETER -> {
+                System.arraycopy(event.values, 0, lastAccelValues, 0, event.values.size)
+            }
+        }
+    }
+    
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    private fun getAppCategory(packageName: String): String {
+        val p = packageName.lowercase()
+        return when {
+            p.contains("whatsapp") || p.contains("messenger") || p.contains("tele") || p.contains("viber") -> "COMMUNICATION"
+            p.contains("facebook") || p.contains("insta") || p.contains("twitter") || p.contains("tik") || p.contains("snap") -> "SOCIAL"
+            p.contains("youtube") || p.contains("netflix") || p.contains("spotify") || p.contains("prime") || p.contains("music") -> "ENTERTAINMENT"
+            p.contains("health") || p.contains("fit") || p.contains("medi") || p.contains("doc") -> "HEALTH"
+            p.contains("bank") || p.contains("pay") || p.contains("wallet") || p.contains("finance") -> "FINANCE"
+            p.isEmpty() -> "NONE"
+            else -> "UTILITY"
+        }
     }
     
     private suspend fun collectAndSend() {
@@ -47,7 +86,7 @@ class SignalCollector(private val context: Context) {
         val plugged = batteryIntent?.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) ?: 0
         val isCharging = plugged == BatteryManager.BATTERY_PLUGGED_AC || plugged == BatteryManager.BATTERY_PLUGGED_USB
         
-        // 2. Network & Wifi
+        // 2. Network
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork
         val caps = connectivityManager.getNetworkCapabilities(network)
@@ -57,22 +96,16 @@ class SignalCollector(private val context: Context) {
             caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
             else -> "UNKNOWN"
         }
+        val isWifi = networkType == "WIFI"
         
-        var wifiSsid = ""
-        if (networkType == "WIFI") {
-            try {
-                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-                val info = wifiManager.connectionInfo
-                if (info != null && info.ssid != null && !info.ssid.contains("unknown")) {
-                    wifiSsid = info.ssid.removeSurrounding("\"")
-                }
-            } catch (e: Exception) { }
-        }
-        
-        // 3. Screen
+        // 3. Screen (Real Tracking)
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         val isScreenOn = powerManager.isInteractive
-        val screenActiveMins = if (isScreenOn) 0 else 10
+        if (isScreenOn) {
+            SharedPrefsHelper.saveLastActiveTime(context, System.currentTimeMillis())
+        }
+        val lastActive = SharedPrefsHelper.getLastActiveTime(context)
+        val diffMins = (System.currentTimeMillis() - lastActive) / (1000 * 60)
         
         // 4. Audio (Ringer & Headphones)
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -86,12 +119,21 @@ class SignalCollector(private val context: Context) {
         val ringerVolPct = if (maxVol > 0) (currentVol * 100) / maxVol else 0
         val headphonesOn = audioManager.isWiredHeadsetOn || audioManager.isBluetoothA2dpOn
         
-        // 5. App Usage
-        var lastAppUsedStr = ""
+        // 5. Environmental Context (Privacy Safe)
+        val lightLevel = when {
+            lastLightValue < 10f -> "DARK"
+            lastLightValue > 500f -> "BRIGHT"
+            else -> "NORMAL"
+        }
+        val orientation = if (Math.abs(lastAccelValues[2]) > 8.5) "FLAT" else "TILTED"
+        val prox = if (lastProximityValue < 1f) "NEAR" else "FAR"
+
+        // 6. App Usage (Mapping to categories for privacy)
+        var appCategory = "NONE"
         try {
             val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             val endTime = System.currentTimeMillis()
-            val startTime = endTime - 1000 * 60 * 60 * 2 // 2 hours
+            val startTime = endTime - 1000 * 60 * 10 // 10 mins back
             val usageEvents = usageStatsManager.queryEvents(startTime, endTime)
             var lastPkg = ""
             if (usageEvents != null) {
@@ -103,7 +145,7 @@ class SignalCollector(private val context: Context) {
                     }
                 }
             }
-            lastAppUsedStr = lastPkg.split(".").lastOrNull() ?: lastPkg
+            appCategory = getAppCategory(lastPkg)
         } catch (e: Exception) { }
 
         // Timestamp
@@ -115,18 +157,21 @@ class SignalCollector(private val context: Context) {
         val packet = SignalPacket(
             phoneNumber = phone,
             timestamp = currentTimestamp,
-            screenActiveLastMins = screenActiveMins,
+            screenActiveLastMins = diffMins.toInt(),
             movementType = "STILL", 
             lastInteractionTime = "",
             batteryLevel = batteryPct,
             isCharging = isCharging,
+            isWifi = isWifi,
             networkType = networkType,
             dndActive = (ringerModeStr == "SILENT"),
             ringerMode = ringerModeStr,
             ringerVolume = ringerVolPct,
             isHeadphonePlugged = headphonesOn,
-            wifiSsid = wifiSsid,
-            lastAppUsed = lastAppUsedStr
+            ambientLight = lightLevel,
+            phoneOrientation = orientation,
+            proximity = prox,
+            appCategory = appCategory
         )
         
         try {
@@ -137,3 +182,4 @@ class SignalCollector(private val context: Context) {
         }
     }
 }
+
