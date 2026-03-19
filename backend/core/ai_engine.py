@@ -55,11 +55,16 @@ def generate_response(
     today_summary = generate_today_summary(signals)
     
     # Extract latest signal context (mocked default mapping for MVP)
-    last_active_mins = signals[0].get('screen_active_last_mins', 'unknown') if signals else 'unknown'
-    movement = signals[0].get('movement_type', 'STILL') if signals else 'unknown'
-    battery = signals[0].get('battery_level', 100) if signals else 100
-    charging_status = "charging" if (signals and signals[0].get('is_charging')) else "not charging"
-    network = signals[0].get('network_type', 'WIFI') if signals else 'offline'
+    latest_signal = signals[0] if signals else {}
+    last_active_mins = latest_signal.get('screen_active_last_mins', 'unknown')
+    movement = latest_signal.get('movement_type', 'STILL')
+    battery = latest_signal.get('battery_level', 'unknown')
+    charging_status = "Charging" if latest_signal.get('is_charging') else "Not Charging"
+    network = latest_signal.get('network_type', 'unknown')
+    dnd_status = "ON (Do Not Disturb)" if latest_signal.get('dnd_active') else "OFF (Ringer On)"
+    last_interaction = latest_signal.get('last_interaction_time', 'N/A')
+    synced_at = latest_signal.get('synced_at', 'unknown')
+    
     # Check if this is a missed call fallback situation
     missed_call_time = None
     if signals and signals[0].get('movement_type') == 'CHECKED_IN_MISSED_CALL':
@@ -68,22 +73,27 @@ def generate_response(
         battery = 'N/A'
         charging_status = 'unknown'
         network = 'offline'
-        dnd = 'unknown'
+        dnd_status = 'unknown' # dnd_status for missed call scenario
+        last_interaction = 'N/A'
+        synced_at = 'N/A'
     
     # Routine profile fallback
     wake_time = routine_profile.get('wake_time_avg', '6:00 AM') if routine_profile else '6:00 AM'
-    nap_start = routine_profile.get('nap_window_start', '2:00 PM') if routine_profile else '2:00 PM'
-    nap_end = routine_profile.get('nap_window_end', '4:00 PM') if routine_profile else '4:00 PM'
+    nap_start = routine_profile.get('nap_window_start', '1:00 PM') if routine_profile else '1:00 PM'
+    nap_end = routine_profile.get('nap_window_end', '2:30 PM') if routine_profile else '2:30 PM'
     sleep_time = routine_profile.get('sleep_time_avg', '10:00 PM') if routine_profile else '10:00 PM'
     walk_days = ", ".join(routine_profile.get('walk_days', ['MON','WED','FRI'])) if routine_profile else 'MON, WED, FRI'
     
     if ai_offline:
         return (
             "🤖 *[AI Offline - Raw Data Mode]*\n\n"
+            f"Last Synced: {synced_at}\n"
             f"Phone last active: {last_active_mins} mins ago\n"
+            f"Last Interaction: {last_interaction}\n"
             f"Movement: {movement}\n"
             f"Battery: {battery}% ({charging_status})\n"
             f"Network: {network}\n"
+            f"DND Mode: {dnd_status}\n"
             f"Status Check: {score_label}\n\n"
             "*(Add Anthropic API Key for natural AI responses)*"
         )
