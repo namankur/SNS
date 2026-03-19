@@ -46,7 +46,9 @@ def generate_response(
     Core function that turns signal data into a warm human message using Claude.
     """
     if not client:
-        return "System is currently offline or Anthropic API key is missing."
+        ai_offline = True
+    else:
+        ai_offline = False
 
     score_label = get_score_label(deviation_score)
     expected_activity_label = get_expected_activity_label(datetime.now().hour)
@@ -74,6 +76,17 @@ def generate_response(
     nap_end = routine_profile.get('nap_window_end', '4:00 PM') if routine_profile else '4:00 PM'
     sleep_time = routine_profile.get('sleep_time_avg', '10:00 PM') if routine_profile else '10:00 PM'
     walk_days = ", ".join(routine_profile.get('walk_days', ['MON','WED','FRI'])) if routine_profile else 'MON, WED, FRI'
+    
+    if ai_offline:
+        return (
+            "🤖 *[AI Offline - Raw Data Mode]*\n\n"
+            f"Phone last active: {last_active_mins} mins ago\n"
+            f"Movement: {movement}\n"
+            f"Battery: {battery}% ({charging_status})\n"
+            f"Network: {network}\n"
+            f"Status Check: {score_label}\n\n"
+            "*(Add Anthropic API Key for natural AI responses)*"
+        )
     
     system_prompt = '''You are a warm, caring assistant helping a worried 
 family member understand if their elderly loved one 
