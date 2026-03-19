@@ -9,6 +9,11 @@ router = APIRouter(prefix="/webhook", tags=["webhooks"])
 async def test_webhook():
     return {"status": "ok", "message": "Webhook endpoint is reachable"}
 
+@router.get("/sms")
+@router.get("/sms/")
+async def textbee_sms_webhook_get():
+    return {"status": "ok", "message": "TextBee Webhook Endpoint is Active"}
+
 @router.post("/sms")
 @router.post("/sms/")
 async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTasks):
@@ -18,30 +23,45 @@ async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTask
     try:
         json_data = await request.json()
         print(f"DEBUG: Webhook received: {json_data}")
+        
+        sender = json_data.get("sender", "").strip()
+        body = json_data.get("message", "").strip()
+        event = json_data.get("webhookEvent", "")
+
+        print(f"DEBUG: Incoming SMS from {sender}: {body} (Event: {event})")
+
+        if event != "MESSAGE_RECEIVED":
+            return {"status": "ignored", "message": f"Unhandled event: {event}"}
+
+        if not sender or not body:
+            return {"status": "error", "message": "Missing sender or message"}
+
+        # Process and generate AI response
+        response_msg = await handle_incoming_sms(sender, body)
+
+        # Queue the SMS response via TextBee
+        if response_msg:
+            background_tasks.add_task(send_sms_via_textbee, [sender], response_msg)
+
+        return {"status": "ok", "message": "Webhook processed, response queued"}
+
     except Exception as e:
-        print(f"DEBUG: Webhook JSON parse error: {e}")
-        return {"status": "error", "message": "Invalid JSON body"}
-
-    sender = json_data.get("sender", "").strip()
-    body = json_data.get("message", "").strip()
-    event = json_data.get("webhookEvent", "")
-
-    print(f"DEBUG: Incoming SMS from {sender}: {body} (Event: {event})")
-
-    if event != "MESSAGE_RECEIVED":
-        return {"status": "ignored", "message": f"Unhandled event: {event}"}
-
-    if not sender or not body:
-        return {"status": "error", "message": "Missing sender or message"}
-
-    # Process and generate AI response
-    response_msg = handle_incoming_sms(sender, body)
-
-    # Queue the SMS response via TextBee
-    if response_msg:
-        background_tasks.add_task(send_sms_via_textbee, [sender], response_msg)
-
-    return {"status": "ok", "message": "Webhook processed, response queued"}
+        error_msg = str(e)
+        print(f"WEBHOOK ERROR: {error_msg}")
+        # Log to DB for persistent debugging
+        try:
+            db = get_db()
+            if db:
+                db.table("check_requests").insert({
+                    "caller_id": None,
+                    "dear_one_id": None,
+                    "response_generated": f"WEBHOOK_CRASH: {error_msg}",
+                    "deviation_score": 0,
+                    "tier": "error"
+                }).execute()
+        except:
+            pass
+        return {"status": "error", "message": error_msg}
 
 @router.post("/missed-call")
 async def missed_call_webhook(request: Request):
