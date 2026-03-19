@@ -1,27 +1,39 @@
-from fastapi import APIRouter, Request, BackgroundTasks, Response
+from fastapi import APIRouter, Request, Response
 from database import get_db
-from core.whatsapp_bot import handle_incoming_whatsapp
+from core.sms_bot import handle_incoming_sms
 
 router = APIRouter(prefix="/webhook", tags=["webhooks"])
 
-@router.post("/whatsapp")
-async def whatsapp_webhook(request: Request):
+@router.post("/sms")
+async def textbee_sms_webhook(request: Request):
     """
-    Twilio WhatsApp Webhook.
+    TextBee incoming SMS Webhook.
+    TextBee sends POST with JSON body:
+    {
+        "smsId": "...",
+        "message": "...",
+        "sender": "+91...",
+        "webhookEvent": "MESSAGE_RECEIVED"
+    }
     """
-    form_data = await request.form()
-    sender = form_data.get("From", "").replace("whatsapp:", "") # e.g. whatsapp:+1234
-    body = form_data.get("Body", "").strip()
-    
-    response_msg = handle_incoming_whatsapp(sender, body)
-    
-    # Return valid TwiML
-    twiml = f'''<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Message>{response_msg}</Message>
-</Response>'''
-    
-    return Response(content=twiml, media_type="application/xml")
+    try:
+        json_data = await request.json()
+    except Exception:
+        return {"status": "error", "message": "Invalid JSON body"}
+
+    sender = json_data.get("sender", "").strip()
+    body = json_data.get("message", "").strip()
+    event = json_data.get("webhookEvent", "")
+
+    if event != "MESSAGE_RECEIVED":
+        return {"status": "ignored", "message": f"Unhandled event: {event}"}
+
+    if not sender or not body:
+        return {"status": "error", "message": "Missing sender or message"}
+
+    response_msg = handle_incoming_sms(sender, body)
+
+    return {"status": "ok", "reply": response_msg}
 
 @router.post("/missed-call")
 async def missed_call_webhook(request: Request):

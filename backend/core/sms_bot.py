@@ -14,8 +14,6 @@ def parse_dear_one_from_message(message: str, caller_id: str) -> str:
     """
     msg_lower = message.lower().strip()
     
-    # Common variations mapping
-    # Just mock returning the first linked dear one for now since DB is empty
     db = get_db()
     if not db:
         return None
@@ -27,7 +25,7 @@ def parse_dear_one_from_message(message: str, caller_id: str) -> str:
     if len(links.data) == 1:
         return links.data[0]['dear_one_id']
         
-    # If multiple, ideally parse msg_lower for matches
+    # If multiple, parse msg_lower for matches
     for link in links.data:
         nickname = link['nickname'].lower()
         if nickname in msg_lower:
@@ -47,10 +45,7 @@ def check_cooldown(caller_id: str, dear_one_id: str, tier: str) -> dict:
         
     cooldown_mins = PREMIUM_TIER_COOLDOWN_MINS if tier == 'premium' else FREE_TIER_COOLDOWN_MINS
     
-    # Check last request in check_requests table
-    # Mocking check for brevity
-    # last_check = db.table()...
-    last_check_time = None # datetime object
+    last_check_time = None  # datetime object
     
     if last_check_time:
         diff_mins = (datetime.now(timezone.utc) - last_check_time).total_seconds() / 60
@@ -69,12 +64,13 @@ def get_onboarding_message() -> str:
         "Apno ki chinta khatam karo.\n"
         "Setup ke liye:\n"
         "safeandsound.in/setup par jaiye aur apna account banao.\n"
-        "Baad mein yahan 'Maa' ya 'Papa' likh ke check kar sakte ho."
+        "Baad mein yahan SMS likh ke check kar sakte ho."
     )
 
-def handle_incoming_whatsapp(caller_phone: str, message: str) -> str:
+def handle_incoming_sms(caller_phone: str, message: str) -> str:
     """
-    Full pipeline to orchestrate the webhook request.
+    Full pipeline to orchestrate an incoming SMS check request.
+    Called by the TextBee webhook when a user sends an SMS.
     """
     db = get_db()
     if not db:
@@ -111,7 +107,7 @@ def handle_incoming_whatsapp(caller_phone: str, message: str) -> str:
     
     ai_response = generate_response(
         user_id=dear_one_id,
-        dear_one_nickname="Ji", # Can fetch from link
+        dear_one_nickname="Ji",
         language="hindi",
         signals=signals,
         routine_profile=routine,

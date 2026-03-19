@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from models import LinkFamilyRequest
 from database import get_db
-from api.deps import get_current_user, twilio_client, TWILIO_SMS_NUMBER, TWILIO_WHATSAPP_NUMBER
+from api.deps import get_current_user, send_sms_via_textbee, TEXTBEE_API_KEY
 
 router = APIRouter(prefix="/api/family", tags=["family"])
 
@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/family", tags=["family"])
 async def link_family(req: LinkFamilyRequest, caller_id: str = Depends(get_current_user)):
     """
     Caller sends invite to dear_one phone number.
-    Dear one receives WhatsApp message to accept.
+    Dear one receives SMS message with app install link.
     """
     db = get_db()
     if not db:
@@ -42,7 +42,7 @@ async def link_family(req: LinkFamilyRequest, caller_id: str = Depends(get_curre
     except Exception as e:
         print(f"Error executing Supabase link: {e}")
 
-    # Send Invite Message
+    # Send Invite Message via SMS (TextBee)
     try:
         caller_res = db.table("users").select("name").eq("user_id", caller_id).execute()
         caller_name = caller_res.data[0]['name'] if caller_res.data else "Aapke kisi apne"
@@ -56,64 +56,35 @@ async def link_family(req: LinkFamilyRequest, caller_id: str = Depends(get_curre
         f"Install karein: {apk_link}"
     )
 
-    sms_status = "no_twilio_client"
+    sms_status = "no_textbee_config"
     sms_error = None
-    whatsapp_status = "skipped"
-    whatsapp_error = None
 
-    if twilio_client:
-        # 1) PRIMARY: Send via SMS (reliable on trial accounts)
-        if TWILIO_SMS_NUMBER:
-            try:
-                sms_msg = twilio_client.messages.create(
-                    body=message_body,
-                    from_=TWILIO_SMS_NUMBER,
-                    to=dear_phone
-                )
-                sms_status = "sent"
-                print(f"SMS invite sent! SID: {sms_msg.sid}")
-            except Exception as e:
-                sms_status = "failed"
-                sms_error = str(e)
-                print(f"Error sending SMS invite: {e}")
+    if TEXTBEE_API_KEY:
+        result = await send_sms_via_textbee([dear_phone], message_body)
+        if result["success"]:
+            sms_status = "sent"
+            print(f"SMS invite sent via TextBee to {dear_phone}")
         else:
-            sms_status = "no_sms_number_configured"
-
-        # 2) SECONDARY: Also try WhatsApp (works only if recipient has active session)
-        if TWILIO_WHATSAPP_NUMBER:
-            try:
-                wa_number = TWILIO_WHATSAPP_NUMBER.replace("whatsapp:", "")
-                wa_msg = twilio_client.messages.create(
-                    body=message_body,
-                    from_=f"whatsapp:{wa_number}",
-                    to=f"whatsapp:{dear_phone}"
-                )
-                whatsapp_status = "sent"
-                print(f"WhatsApp invite also sent! SID: {wa_msg.sid}")
-            except Exception as e:
-                whatsapp_status = "failed"
-                whatsapp_error = str(e)
-                print(f"WhatsApp attempt failed (non-critical): {e}")
-
-    # Invite is considered successful if SMS was sent
-    overall_status = "sent" if sms_status == "sent" else sms_status
+            sms_status = "failed"
+            sms_error = result.get("error", "Unknown TextBee error")
+            print(f"Error sending SMS invite via TextBee: {sms_error}")
+    else:
+        sms_error = "TextBee API key not configured. Set TEXTBEE_API_KEY and TEXTBEE_DEVICE_ID in .env"
 
     return {
         "status": "success", 
         "message": "Dear one linked successfully",
         "dear_one_id": dear_one_id,
-        "invite_status": overall_status,
+        "invite_status": sms_status,
         "sms_status": sms_status,
         "sms_error": sms_error,
-        "whatsapp_status": whatsapp_status,
-        "whatsapp_error": whatsapp_error,
         "message_body": message_body
     }
 
 @router.get("/check/{dear_one_nickname}")
 async def manual_check(dear_one_nickname: str):
     """
-    Called when caller asks 'Maa?' on WhatsApp (or via UI).
+    Called when caller asks 'Maa?' via SMS (or via UI).
     Enforce cooldown.
     Calculate deviation score.
     Call Claude API.

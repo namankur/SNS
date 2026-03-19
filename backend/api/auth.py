@@ -4,7 +4,7 @@ import jwt
 from fastapi import APIRouter, HTTPException, Depends
 from models import UserCreate, VerifyOTPRequest
 from database import get_db
-from api.deps import JWT_SECRET, JWT_ALGORITHM, twilio_client, TWILIO_SMS_NUMBER, get_current_user
+from api.deps import JWT_SECRET, JWT_ALGORITHM, send_sms_via_textbee, TEXTBEE_API_KEY, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -20,7 +20,7 @@ def create_jwt_token(user_id: str, role: str):
 @router.post("/register")
 async def register(user: UserCreate):
     """
-    Register new user. Sends OTP.
+    Register new user. Sends OTP via SMS (TextBee).
     """
     db = get_db()
     if not db:
@@ -48,23 +48,22 @@ async def register(user: UserCreate):
     # Store OTP in cache/redis in production. We use '1234' as static for this MVP unless hooked to Redis
     otp = "1234"
     
-    # Format phone number to E.164 standard for Twilio
+    # Format phone number to E.164 standard
     target_phone = user.phone_number.strip()
     if len(target_phone) == 10 and target_phone.isdigit():
         target_phone = f"+91{target_phone}"
     elif not target_phone.startswith('+'):
         target_phone = f"+{target_phone}"
     
-    if twilio_client and TWILIO_SMS_NUMBER:
-        try:
-            twilio_client.messages.create(
-                body=f"Your Safe & Sound OTP is {otp}",
-                from_=TWILIO_SMS_NUMBER,
-                to=target_phone
-            )
-        except Exception as e:
-            print(f"Twilio error: {e}")
-            raise HTTPException(status_code=400, detail=f"Failed to send SMS: {e}")
+    # Send OTP via TextBee SMS
+    if TEXTBEE_API_KEY:
+        result = await send_sms_via_textbee(
+            [target_phone],
+            f"Your Safe & Sound OTP is {otp}"
+        )
+        if not result["success"]:
+            print(f"TextBee OTP send error: {result.get('error')}")
+            # Don't block registration if SMS fails — OTP is static '1234' for MVP
             
     return {"status": "success", "message": "OTP sent", "user_id": user_id}
 

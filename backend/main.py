@@ -37,13 +37,12 @@ async def root():
 async def health_check():
     return {"status": "ok"}
 
-@app.get("/debug/twilio")
-async def debug_twilio():
-    """Temporary debug endpoint to check Twilio config. Remove in production."""
+@app.get("/debug/textbee")
+async def debug_textbee():
+    """Debug endpoint to check TextBee config. Remove in production."""
     return {
-        "TWILIO_ACCOUNT_SID_set": bool(os.getenv("TWILIO_ACCOUNT_SID")),
-        "TWILIO_AUTH_TOKEN_set": bool(os.getenv("TWILIO_AUTH_TOKEN")),
-        "TWILIO_SMS_NUMBER": os.getenv("TWILIO_SMS_NUMBER", "NOT SET"),
-        "TWILIO_WHATSAPP_NUMBER": os.getenv("TWILIO_WHATSAPP_NUMBER", "NOT SET"),
+        "TEXTBEE_API_KEY_set": bool(os.getenv("TEXTBEE_API_KEY")),
+        "TEXTBEE_DEVICE_ID_set": bool(os.getenv("TEXTBEE_DEVICE_ID")),
+        "TEXTBEE_BASE_URL": os.getenv("TEXTBEE_BASE_URL", "https://api.textbee.dev/api/v1"),
         "JWT_SECRET_KEY_length": len(os.getenv("JWT_SECRET_KEY", "")),
     }

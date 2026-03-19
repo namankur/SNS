@@ -6,15 +6,13 @@ export default function Invite() {
     const location = useLocation();
     const data = location.state || {};
     
-    // Safely parse the backend response
     const inviteStatus = data.invite_status || 'unknown';
     const smsStatus = data.sms_status || 'unknown';
-    const whatsappStatus = data.whatsapp_status || 'skipped';
     const messageBody = data.message_body || 'No message preview available.';
     const smsError = data.sms_error || 'Unknown error';
     
-    // Check if the actual SMS sending failed
-    const isError = smsStatus === 'failed' || smsStatus === 'no_twilio_client';
+    // Check if SMS sending failed
+    const isError = smsStatus === 'failed' || smsStatus === 'no_textbee_config';
 
     return (
         <div className="min-h-screen bg-orange-50 flex flex-col items-center justify-center p-4">
@@ -26,7 +24,10 @@ export default function Invite() {
                         <div className="bg-red-50 text-red-800 p-4 rounded-xl text-left text-sm space-y-2">
                             <p><strong>Error:</strong></p>
                             <p className="font-mono bg-red-100 p-2 rounded">{smsError}</p>
-                            <p className="mt-4 text-xs">Please ensure the backend is running and Twilio credentials are configured correctly.</p>
+                            <p className="mt-4 text-xs">
+                                Please ensure the backend is running and TextBee is configured correctly 
+                                (API key + Device ID in .env, TextBee app running on Android phone).
+                            </p>
                         </div>
                     </>
                 ) : (
@@ -36,7 +37,7 @@ export default function Invite() {
                             <p><strong>Message sent:</strong></p>
                             <p className="whitespace-pre-wrap">{messageBody}</p>
                         </div>
-                        <p className="text-xs text-gray-400">SMS: {smsStatus} | WhatsApp: {whatsappStatus}</p>
+                        <p className="text-xs text-gray-400">SMS Status: {smsStatus}</p>
                     </>
                 )}
 

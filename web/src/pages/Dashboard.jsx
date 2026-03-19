@@ -5,19 +5,24 @@ export default function Dashboard() {
     const [dearOnes, setDearOnes] = useState([]);
     const [callerName, setCallerName] = useState('...');
     const [loading, setLoading] = useState(true);
+    const [checkingId, setCheckingId] = useState(null);
+
+    const getCallerId = () => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                return payload.sub;
+            } catch (e) {
+                console.error("Invalid token format");
+            }
+        }
+        return '00000000-0000-0000-0000-000000000000';
+    };
 
     useEffect(() => {
         async function fetchDearOnes() {
-            let callerId = '00000000-0000-0000-0000-000000000000';
-            const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    const payload = JSON.parse(atob(token.split('.')[1]));
-                    callerId = payload.sub;
-                } catch (e) {
-                    console.error("Invalid token format");
-                }
-            }
+            const callerId = getCallerId();
             
             // 1. Get caller's own name
             const { data: userData } = await supabase
@@ -45,7 +50,7 @@ export default function Dashboard() {
                     name: `${link.users.name || 'User'} (${link.nickname})`,
                     nickname: link.nickname,
                     status: 'Active',
-                    lastSync: 'Status available on WhatsApp',
+                    lastSync: 'Status available via SMS',
                     score: 'Secured ✅'
                 })));
             }
@@ -53,6 +58,24 @@ export default function Dashboard() {
         }
         fetchDearOnes();
     }, []);
+
+    const handleCheckNow = async (nickname) => {
+        setCheckingId(nickname);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(
+                `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/family/check/${encodeURIComponent(nickname)}`,
+                {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }
+            );
+            const data = await res.json();
+            alert(data.message || 'Check request sent!');
+        } catch (err) {
+            alert('Failed to send check request. Is the backend running?');
+        }
+        setCheckingId(null);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 p-4">
@@ -81,14 +104,13 @@ export default function Dashboard() {
                                     </div>
                                 </div>
 
-                                <a
-                                    href={`https://wa.me/14155238886?text=${encodeURIComponent(person.nickname)}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="block text-center w-full bg-orange-500 hover:bg-orange-600 text-white p-3 rounded-xl font-bold shadow-sm transition-colors"
+                                <button
+                                    onClick={() => handleCheckNow(person.nickname)}
+                                    disabled={checkingId === person.nickname}
+                                    className="block text-center w-full bg-orange-500 hover:bg-orange-600 text-white p-3 rounded-xl font-bold shadow-sm transition-colors disabled:opacity-50"
                                 >
-                                    Check Now via WhatsApp
-                                </a>
+                                    {checkingId === person.nickname ? 'Checking...' : 'Check Now via SMS'}
+                                </button>
                             </div>
                         ))}
             </div>

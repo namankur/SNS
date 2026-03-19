@@ -41,7 +41,12 @@ async def receive_signals(signal: SignalCreate, background_tasks: BackgroundTask
             "battery_level": signal.battery_level,
             "is_charging": signal.is_charging,
             "network_type": signal.network_type,
-            "dnd_active": signal.dnd_active
+            "dnd_active": signal.dnd_active,
+            "ringer_mode": signal.ringer_mode,
+            "ringer_volume": signal.ringer_volume,
+            "is_headphone_plugged": signal.is_headphone_plugged,
+            "wifi_ssid": signal.wifi_ssid,
+            "last_app_used": signal.last_app_used
         }).execute()
     except Exception as e:
         # FK error likely if user doesn't exist yet
