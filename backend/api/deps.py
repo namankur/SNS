@@ -42,13 +42,21 @@ async def send_sms_via_textbee(recipients: list, message: str) -> dict:
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(url, json=payload, headers=headers)
-            response_data = response.json()
+            
+            # Safely attempt to parse JSON
+            response_data = {}
+            try:
+                if response.text.strip():
+                    response_data = response.json()
+            except Exception:
+                # If parsing fails, fall back to raw text
+                response_data = {"message": response.text}
 
-            if response.status_code >= 200 and response.status_code < 300:
+            if 200 <= response.status_code < 300:
                 print(f"TextBee SMS sent successfully to {recipients}")
                 return {"success": True, "data": response_data}
             else:
-                error_msg = response_data.get("message", response.text)
+                error_msg = response_data.get("message", response.text) or f"HTTP {response.status_code}"
                 print(f"TextBee API error ({response.status_code}): {error_msg}")
                 return {"success": False, "error": error_msg, "status_code": response.status_code}
     except httpx.TimeoutException:
@@ -56,7 +64,7 @@ async def send_sms_via_textbee(recipients: list, message: str) -> dict:
         return {"success": False, "error": "Request timed out. Check network or TextBee service status."}
     except Exception as e:
         print(f"TextBee send error: {e}")
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": f"Internal Error: {str(e)}"}
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
