@@ -31,6 +31,8 @@ async def register(user: UserCreate):
         existing = db.table("users").select("*").eq("phone_number", user.phone_number).execute()
         if len(existing.data) > 0:
             user_id = existing.data[0]['user_id']
+            # Update name in case it changed
+            db.table("users").update({"name": user.name}).eq("user_id", user_id).execute()
         else:
             # Insert new user
             new_user = db.table("users").insert({

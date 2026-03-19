@@ -37,8 +37,7 @@ async def link_family(req: LinkFamilyRequest, caller_id: str = Depends(get_curre
         db.table("caller_dear_one_links").insert({
             "caller_id": caller_id,
             "dear_one_id": dear_one_id,
-            "nickname": req.nickname,
-            "relation_type": "family"
+            "nickname": req.nickname
         }).execute()
     except Exception as e:
         print(f"Error executing Supabase link: {e}")
@@ -52,47 +51,62 @@ async def link_family(req: LinkFamilyRequest, caller_id: str = Depends(get_curre
 
     apk_link = "https://awqhrmnfxsdqospuiamm.supabase.co/storage/v1/object/public/releases/app-debug.apk"
     message_body = (
-        f"Namaste {req.nickname} ji 🙏\n"
-        f"*{caller_name}* ne aapke liye Safe & Sound setup kiya hai. "
-        f"Yeh aapko track nahi karta — sirf aapke phone ki basic activity dekhta hai taaki unhe aapki chinta na ho.\n\n"
-        f"App install karne kr liye is link pe click karein:\n{apk_link}\n\n"
-        f"Koi sawaal hai toh yahan reply karein."
+        f"Namaste {req.nickname} ji, "
+        f"{caller_name} ne aapke liye Safe & Sound app setup kiya hai. "
+        f"Install karein: {apk_link}"
     )
 
-    invite_status = "no_twilio_client"
-    invite_error = None
+    sms_status = "no_twilio_client"
+    sms_error = None
+    whatsapp_status = "skipped"
+    whatsapp_error = None
 
     if twilio_client:
-        try:
-            # Send via SMS as fallback or explicitly if WhatsApp Number not set
-            from_number = TWILIO_SMS_NUMBER
-            to_number = dear_phone
-            
-            # If WhatsApp is targeted and configured
-            if TWILIO_WHATSAPP_NUMBER:
-                # Strip any existing whatsapp: prefix to avoid double-prefix bug
-                wa_number = TWILIO_WHATSAPP_NUMBER.replace("whatsapp:", "")
-                from_number = f"whatsapp:{wa_number}"
-                to_number = f"whatsapp:{dear_phone}"
+        # 1) PRIMARY: Send via SMS (reliable on trial accounts)
+        if TWILIO_SMS_NUMBER:
+            try:
+                sms_msg = twilio_client.messages.create(
+                    body=message_body,
+                    from_=TWILIO_SMS_NUMBER,
+                    to=dear_phone
+                )
+                sms_status = "sent"
+                print(f"SMS invite sent! SID: {sms_msg.sid}")
+            except Exception as e:
+                sms_status = "failed"
+                sms_error = str(e)
+                print(f"Error sending SMS invite: {e}")
+        else:
+            sms_status = "no_sms_number_configured"
 
-            msg = twilio_client.messages.create(
-                body=message_body,
-                from_=from_number,
-                to=to_number
-            )
-            invite_status = "sent"
-            print(f"WhatsApp invite sent! SID: {msg.sid}")
-        except Exception as e:
-            invite_status = "failed"
-            invite_error = str(e)
-            print(f"Error sending WhatsApp/SMS invite: {e}")
+        # 2) SECONDARY: Also try WhatsApp (works only if recipient has active session)
+        if TWILIO_WHATSAPP_NUMBER:
+            try:
+                wa_number = TWILIO_WHATSAPP_NUMBER.replace("whatsapp:", "")
+                wa_msg = twilio_client.messages.create(
+                    body=message_body,
+                    from_=f"whatsapp:{wa_number}",
+                    to=f"whatsapp:{dear_phone}"
+                )
+                whatsapp_status = "sent"
+                print(f"WhatsApp invite also sent! SID: {wa_msg.sid}")
+            except Exception as e:
+                whatsapp_status = "failed"
+                whatsapp_error = str(e)
+                print(f"WhatsApp attempt failed (non-critical): {e}")
+
+    # Invite is considered successful if SMS was sent
+    overall_status = "sent" if sms_status == "sent" else sms_status
 
     return {
         "status": "success", 
-        "message": f"Dear one linked successfully",
+        "message": "Dear one linked successfully",
         "dear_one_id": dear_one_id,
-        "invite_status": invite_status,
-        "invite_error": invite_error,
+        "invite_status": overall_status,
+        "sms_status": sms_status,
+        "sms_error": sms_error,
+        "whatsapp_status": whatsapp_status,
+        "whatsapp_error": whatsapp_error,
         "message_body": message_body
     }
 

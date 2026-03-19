@@ -8,11 +8,13 @@ export default function Invite() {
     
     // Safely parse the backend response
     const inviteStatus = data.invite_status || 'unknown';
+    const smsStatus = data.sms_status || 'unknown';
+    const whatsappStatus = data.whatsapp_status || 'skipped';
     const messageBody = data.message_body || 'No message preview available.';
-    const errorMessage = data.invite_error || 'Unknown Twilio error';
+    const smsError = data.sms_error || 'Unknown error';
     
-    // Check if the actual Twilio sending failed
-    const isError = inviteStatus === 'failed';
+    // Check if the actual SMS sending failed
+    const isError = smsStatus === 'failed' || smsStatus === 'no_twilio_client';
 
     return (
         <div className="min-h-screen bg-orange-50 flex flex-col items-center justify-center p-4">
@@ -22,18 +24,19 @@ export default function Invite() {
                     <>
                         <h2 className="text-2xl font-bold text-red-600">Invite Failed ❌</h2>
                         <div className="bg-red-50 text-red-800 p-4 rounded-xl text-left text-sm space-y-2">
-                            <p><strong>Twilio Error:</strong></p>
-                            <p className="font-mono bg-red-100 p-2 rounded">{errorMessage}</p>
-                            <p className="mt-4 text-xs">Note: If you are using a Twilio Sandbox, the recipient number must send "join [your-sandbox-word]" to the Twilio number first.</p>
+                            <p><strong>Error:</strong></p>
+                            <p className="font-mono bg-red-100 p-2 rounded">{smsError}</p>
+                            <p className="mt-4 text-xs">Please ensure the backend is running and Twilio credentials are configured correctly.</p>
                         </div>
                     </>
                 ) : (
                     <>
-                        <h2 className="text-2xl font-bold text-green-600">Invite Sent on WhatsApp! ✅</h2>
-                        <div className="bg-green-50 text-green-800 p-4 rounded-xl text-left text-sm space-y-2 whitespace-pre-wrap">
-                            <p><strong>Preview of message sent:</strong></p>
-                            <p>{messageBody}</p>
+                        <h2 className="text-2xl font-bold text-green-600">Invite Sent via SMS! ✅</h2>
+                        <div className="bg-green-50 text-green-800 p-4 rounded-xl text-left text-sm space-y-2">
+                            <p><strong>Message sent:</strong></p>
+                            <p className="whitespace-pre-wrap">{messageBody}</p>
                         </div>
+                        <p className="text-xs text-gray-400">SMS: {smsStatus} | WhatsApp: {whatsappStatus}</p>
                     </>
                 )}
 

@@ -20,7 +20,7 @@ export default function Register() {
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone_number: phone, name: 'Caller', role: 'caller' })
+                body: JSON.stringify({ phone_number: phone, name: name, role: 'caller' })
             });
             const data = await res.json();
             if (res.ok) setStep(2);
@@ -83,10 +83,11 @@ export default function Register() {
             case 1:
                 return (
                     <div className="space-y-4">
-                        <h2 className="text-2xl font-bold">Step 1: Your Phone Number</h2>
+                        <h2 className="text-2xl font-bold">Step 1: Your Details</h2>
                         {error && <p className="text-red-500 text-sm">{error}</p>}
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your Name" className="w-full p-4 border rounded-xl text-lg" />
                         <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" className="w-full p-4 border rounded-xl text-lg" />
-                        <button onClick={handleSendOTP} disabled={loading} className="w-full bg-orange-500 text-white p-4 rounded-xl font-bold">
+                        <button onClick={handleSendOTP} disabled={loading || !name.trim()} className="w-full bg-orange-500 text-white p-4 rounded-xl font-bold">
                             {loading ? 'Sending...' : 'Send OTP'}
                         </button>
                     </div>
