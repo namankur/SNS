@@ -13,6 +13,14 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.app.usage.UsageEvents
+import android.app.usage.UsageStatsManager
+import kotlinx.coroutines.*
+import com.safeandsound.api.RetrofitClient
+import com.safeandsound.api.SignalPacket
+import com.safeandsound.utils.SharedPrefsHelper
+import java.text.SimpleDateFormat
+import java.util.*
 
 class SignalCollector(private val context: Context) : SensorEventListener {
     
