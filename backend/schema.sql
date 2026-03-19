@@ -38,8 +38,21 @@ CREATE TABLE signals (
     is_charging BOOLEAN,
     network_type TEXT, -- WIFI/MOBILE/NONE
     dnd_active BOOLEAN,
+    ringer_mode TEXT DEFAULT 'NORMAL', -- NORMAL/VIBRATE/SILENT
+    ringer_volume INTEGER DEFAULT 50, -- 0-100
+    is_headphone_plugged BOOLEAN DEFAULT FALSE,
+    wifi_ssid TEXT DEFAULT '',
+    last_app_used TEXT DEFAULT '',
     synced_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migration script (Run this in Supabase SQL Editor to update live database):
+-- ALTER TABLE signals 
+-- ADD COLUMN ringer_mode TEXT DEFAULT 'NORMAL',
+-- ADD COLUMN ringer_volume INTEGER DEFAULT 50,
+-- ADD COLUMN is_headphone_plugged BOOLEAN DEFAULT FALSE,
+-- ADD COLUMN wifi_ssid TEXT DEFAULT '',
+-- ADD COLUMN last_app_used TEXT DEFAULT '';
 
 -- Table: routine_profiles
 CREATE TABLE routine_profiles (

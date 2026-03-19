@@ -31,6 +31,11 @@ class SignalCreate(BaseModel):
     is_charging: bool = False
     network_type: str = "WIFI"
     dnd_active: bool = False
+    ringer_mode: str = "NORMAL"
+    ringer_volume: int = 50
+    is_headphone_plugged: bool = False
+    wifi_ssid: str = ""
+    last_app_used: str = ""
 
 class LinkFamilyRequest(BaseModel):
     dear_one_phone: str

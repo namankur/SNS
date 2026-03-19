@@ -60,10 +60,16 @@ def generate_response(
     movement = latest_signal.get('movement_type', 'STILL')
     battery = latest_signal.get('battery_level', 'unknown')
     charging_status = "Charging" if latest_signal.get('is_charging') else "Not Charging"
-    network = latest_signal.get('network_type', 'unknown')
+    network_raw = latest_signal.get('network_type', 'unknown')
+    wifi_ssid = latest_signal.get('wifi_ssid', '')
+    network = f"{network_raw} ({wifi_ssid})" if wifi_ssid else network_raw
     dnd_status = "ON (Do Not Disturb)" if latest_signal.get('dnd_active') else "OFF (Ringer On)"
     last_interaction = latest_signal.get('last_interaction_time', 'N/A')
     synced_at = latest_signal.get('synced_at', 'unknown')
+    ringer_mode = latest_signal.get('ringer_mode', 'NORMAL')
+    ringer_vol = latest_signal.get('ringer_volume', 50)
+    headphones = "Plugged in / Bluetooth" if latest_signal.get('is_headphone_plugged') else "Disconnected"
+    last_app = latest_signal.get('last_app_used', 'N/A')
     
     # Check if this is a missed call fallback situation
     missed_call_time = None
@@ -76,6 +82,10 @@ def generate_response(
         dnd_status = 'unknown' # dnd_status for missed call scenario
         last_interaction = 'N/A'
         synced_at = 'N/A'
+        ringer_mode = 'unknown'
+        ringer_vol = 'unknown'
+        headphones = 'unknown'
+        last_app = 'unknown'
     
     # Routine profile fallback
     wake_time = routine_profile.get('wake_time_avg', '6:00 AM') if routine_profile else '6:00 AM'
@@ -89,11 +99,12 @@ def generate_response(
             "🤖 *[AI Offline - Raw Data Mode]*\n\n"
             f"Last Synced: {synced_at}\n"
             f"Phone last active: {last_active_mins} mins ago\n"
-            f"Last Interaction: {last_interaction}\n"
+            f"Last App Used: {last_app}\n"
             f"Movement: {movement}\n"
             f"Battery: {battery}% ({charging_status})\n"
             f"Network: {network}\n"
-            f"DND Mode: {dnd_status}\n"
+            f"Ringer / DND: {ringer_mode} at {ringer_vol}% Volume\n"
+            f"Headphones: {headphones}\n"
             f"Status Check: {score_label}\n\n"
             "*(Add Anthropic API Key for natural AI responses)*"
         )
