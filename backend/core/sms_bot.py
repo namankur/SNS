@@ -77,18 +77,6 @@ def handle_incoming_sms(caller_phone: str, message: str) -> str:
         return "Abhi system busy hai. 2 minute mein dobara try karein 🙏"
         
     # 1. Lookup caller robustly (last 10 digits)
-    # DIAGNOSTIC LOG: Record the attempt even if user not found later
-    try:
-        db.table("check_requests").insert({
-            "caller_id": None, # Will update if user found
-            "dear_one_id": None,
-            "response_generated": f"DEBUG: Received '{msg_lower}' from {caller_phone}",
-            "deviation_score": 0,
-            "tier": "diagnostic"
-        }).execute()
-    except Exception as e:
-        print(f"Diagnostic log error: {e}")
-
     clean_incoming = ''.join(filter(str.isdigit, caller_phone))
     if len(clean_incoming) < 10:
         return get_onboarding_message()

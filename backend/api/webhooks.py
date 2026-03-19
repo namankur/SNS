@@ -22,13 +22,10 @@ async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTask
     """
     try:
         json_data = await request.json()
-        print(f"DEBUG: Webhook received: {json_data}")
         
         sender = json_data.get("sender", "").strip()
         body = json_data.get("message", "").strip()
         event = json_data.get("webhookEvent", "")
-
-        print(f"DEBUG: Incoming SMS from {sender}: {body} (Event: {event})")
 
         if event != "MESSAGE_RECEIVED":
             return {"status": "ignored", "message": f"Unhandled event: {event}"}
@@ -48,19 +45,6 @@ async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTask
     except Exception as e:
         error_msg = str(e)
         print(f"WEBHOOK ERROR: {error_msg}")
-        # Log to DB for persistent debugging
-        try:
-            db = get_db()
-            if db:
-                db.table("check_requests").insert({
-                    "caller_id": None,
-                    "dear_one_id": None,
-                    "response_generated": f"WEBHOOK_CRASH: {error_msg}",
-                    "deviation_score": 0,
-                    "tier": "error"
-                }).execute()
-        except:
-            pass
         return {"status": "error", "message": error_msg}
 
 @router.post("/missed-call")
