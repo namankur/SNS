@@ -14,12 +14,23 @@ async def receive_signals(signal: SignalCreate, background_tasks: BackgroundTask
     if not db:
         raise HTTPException(status_code=500, detail="Database not connected")
 
-    # Lookup user by phone number
-    users_res = db.table("users").select("user_id").eq("phone_number", signal.phone_number).execute()
-    if not users_res.data:
+    # Robustly lookup user by matching the last 10 digits to ignore formatting
+    clean_incoming = ''.join(filter(str.isdigit, signal.phone_number))
+    if len(clean_incoming) < 10:
+        raise HTTPException(status_code=400, detail="Invalid phone number format")
+    target_digits = clean_incoming[-10:]
+    
+    users_res = db.table("users").select("user_id, phone_number").execute()
+    user_id = None
+    
+    for u in users_res.data:
+        clean_db = ''.join(filter(str.isdigit, u.get("phone_number", "")))
+        if clean_db.endswith(target_digits):
+            user_id = u["user_id"]
+            break
+            
+    if not user_id:
         raise HTTPException(status_code=404, detail="User not found for this phone number")
-        
-    user_id = users_res.data[0]['user_id']
     try:
         db.table("signals").insert({
             "user_id": user_id,
