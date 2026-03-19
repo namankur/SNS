@@ -30,8 +30,18 @@ def generate_today_summary(signals: list) -> str:
     Summarizes today's signals in plain English based on the rules.
     """
     if not signals:
-        return "No data recorded today yet."
-    return "Morning walk completed, active until 2pm, quiet since then — normal pattern."
+        return "Aaj ka koi naya data record nahi hua hai."
+    
+    # Simple aggregation of unique movements or significant events today
+    movements = list(set([s.get('movement_type', 'STILL') for s in signals[:5]]))
+    avg_battery = sum([s.get('battery_level', 0) for s in signals]) / len(signals) if signals else 0
+    
+    summary = f"Phone abhi {movements[0].lower()} mode mein hai. "
+    if len(movements) > 1:
+        summary += f"Din mein {', '.join(movements[1:]).lower()} activity dekhi gayi. "
+    
+    summary += f"Battery average {int(avg_battery)}% rahi hai."
+    return summary
 
 def generate_response(
     user_id: str, 
@@ -96,17 +106,16 @@ def generate_response(
     
     if ai_offline:
         return (
-            "🤖 *[AI Offline - Raw Data Mode]*\n\n"
+            f"Status Update for {dear_one_nickname}:\n\n"
             f"Last Synced: {synced_at}\n"
-            f"Phone last active: {last_active_mins} mins ago\n"
-            f"Last App Used: {last_app}\n"
-            f"Movement: {movement}\n"
+            f"Phone active: {last_active_mins} mins ago\n"
+            f"App: {last_app}\n"
+            f"Activity: {movement}\n"
             f"Battery: {battery}% ({charging_status})\n"
             f"Network: {network}\n"
-            f"Ringer / DND: {ringer_mode} at {ringer_vol}% Volume\n"
+            f"Ringer/DND: {ringer_mode} ({ringer_vol}%)\n"
             f"Headphones: {headphones}\n"
-            f"Status Check: {score_label}\n\n"
-            "*(Add Anthropic API Key for natural AI responses)*"
+            f"Trend: {score_label}"
         )
     
     system_prompt = '''You are a warm, caring assistant helping a worried 
