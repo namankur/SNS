@@ -5,21 +5,12 @@ from core.routine_engine import calculate_routine_profile
 
 router = APIRouter(prefix="/api/signals", tags=["signals"])
 
-# Dummy dep for JWT; would decode real JWT in prod
-async def get_current_user_id() -> str:
-    # return decoded_jwt['sub']
-    return "00000000-0000-0000-0000-000000000000" # fallback
-
-@router.post("")
-async def receive_signals(signal: SignalCreate, background_tasks: BackgroundTasks):
-    """
-    Receive signal packet from dear one's Android app.
-    """
-    db = get_db()
-    if not db:
-        raise HTTPException(status_code=500, detail="Database not connected")
+    # Lookup user by phone number
+    users_res = db.table("users").select("user_id").eq("phone_number", signal.phone_number).execute()
+    if not users_res.data:
+        raise HTTPException(status_code=404, detail="User not found for this phone number")
         
-    user_id = await get_current_user_id()
+    user_id = users_res.data[0]['user_id']
     
     try:
         db.table("signals").insert({

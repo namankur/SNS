@@ -15,12 +15,13 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:allowBackup="false"
         android:label="Safe &amp; Sound"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
         
-        <!-- Boot Receiver for Auto-start -->
         <receiver android:name=".utils.BootReceiver"
             android:enabled="true"
             android:exported="true">
@@ -29,7 +30,12 @@
             </intent-filter>
         </receiver>
 
-        <!-- Dummy Setup Activity that will be hidden after setup -->
+        <service
+            android:name=".signals.TrackingService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <activity android:name=".ui.SetupActivity"
             android:exported="true">
             <intent-filter>

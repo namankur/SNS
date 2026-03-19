@@ -22,14 +22,15 @@ class UserResponse(BaseModel):
     is_active: bool
 
 class SignalCreate(BaseModel):
+    phone_number: str
     timestamp: datetime
     screen_active_last_mins: int
-    movement_type: str
-    last_interaction_time: str
-    battery_level: int
-    is_charging: bool
-    network_type: str
-    dnd_active: bool
+    movement_type: str = "STILL"
+    last_interaction_time: str = ""
+    battery_level: int = 100
+    is_charging: bool = False
+    network_type: str = "WIFI"
+    dnd_active: bool = False
 
 class LinkFamilyRequest(BaseModel):
     dear_one_phone: str
