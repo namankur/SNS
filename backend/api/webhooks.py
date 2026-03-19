@@ -1,20 +1,14 @@
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Request, Response, BackgroundTasks
 from database import get_db
 from core.sms_bot import handle_incoming_sms
+from .deps import send_sms_via_textbee
 
 router = APIRouter(prefix="/webhook", tags=["webhooks"])
 
 @router.post("/sms")
-async def textbee_sms_webhook(request: Request):
+async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTasks):
     """
     TextBee incoming SMS Webhook.
-    TextBee sends POST with JSON body:
-    {
-        "smsId": "...",
-        "message": "...",
-        "sender": "+91...",
-        "webhookEvent": "MESSAGE_RECEIVED"
-    }
     """
     try:
         json_data = await request.json()
@@ -31,9 +25,14 @@ async def textbee_sms_webhook(request: Request):
     if not sender or not body:
         return {"status": "error", "message": "Missing sender or message"}
 
+    # Process and generate AI response
     response_msg = handle_incoming_sms(sender, body)
 
-    return {"status": "ok", "reply": response_msg}
+    # Queue the SMS response via TextBee
+    if response_msg:
+        background_tasks.add_task(send_sms_via_textbee, [sender], response_msg)
+
+    return {"status": "ok", "message": "Webhook processed, response queued"}
 
 @router.post("/missed-call")
 async def missed_call_webhook(request: Request):

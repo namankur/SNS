@@ -76,12 +76,24 @@ def handle_incoming_sms(caller_phone: str, message: str) -> str:
     if not db:
         return "Abhi system busy hai. 2 minute mein dobara try karein 🙏"
         
-    # 1. Lookup caller
-    users = db.table("users").select("*").eq("phone_number", caller_phone).execute()
-    if not users.data:
+    # 1. Lookup caller robustly (last 10 digits)
+    clean_incoming = ''.join(filter(str.isdigit, caller_phone))
+    if len(clean_incoming) < 10:
+        return get_onboarding_message()
+    target_digits = clean_incoming[-10:]
+    
+    users_res = db.table("users").select("*").execute()
+    caller = None
+    if users_res.data:
+        for u in users_res.data:
+            clean_db = ''.join(filter(str.isdigit, u.get("phone_number", "")))
+            if clean_db.endswith(target_digits):
+                caller = u
+                break
+                
+    if not caller:
         return get_onboarding_message()
         
-    caller = users.data[0]
     caller_id = caller['user_id']
     tier = caller.get('tier', 'free')
     
