@@ -5,7 +5,12 @@ from .deps import send_sms_via_textbee
 
 router = APIRouter(prefix="/webhook", tags=["webhooks"])
 
+@router.get("/test")
+async def test_webhook():
+    return {"status": "ok", "message": "Webhook endpoint is reachable"}
+
 @router.post("/sms")
+@router.post("/sms/")
 async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTasks):
     """
     TextBee incoming SMS Webhook.
