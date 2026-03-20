@@ -5,12 +5,15 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
+import android.os.IBinder
 import androidx.core.app.NotificationCompat
 
 class TrackingService : Service() {
 
     private val CHANNEL_ID = "SafeAndSoundTracking"
     private var collector: SignalCollector? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -20,6 +23,11 @@ class TrackingService : Service() {
         } else {
             startForeground(1, createNotification())
         }
+        
+        // Prevent CPU from sleeping to ensure 5-minute loop continues running
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SafeAndSound::TrackingWakeLock")
+        wakeLock?.acquire()
         
         collector = SignalCollector(this)
         collector?.startCollecting()
@@ -34,6 +42,9 @@ class TrackingService : Service() {
 
     override fun onDestroy() {
         collector?.stopCollecting()
+        if (wakeLock?.isHeld == true) {
+            wakeLock?.release()
+        }
         super.onDestroy()
     }
 
