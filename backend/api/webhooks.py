@@ -21,17 +21,25 @@ async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTask
     TextBee incoming SMS Webhook.
     """
     try:
+    try:
         json_data = await request.json()
+        print(f"WEBHOOK RECEIVED: {json_data}") # Visible in Railway logs
         
-        sender = json_data.get("sender", "").strip()
-        body = json_data.get("message", "").strip()
-        event = json_data.get("webhookEvent", "")
+        # Robust field extraction
+        sender = json_data.get("sender") or json_data.get("from") or json_data.get("phone")
+        body = json_data.get("message") or json_data.get("text") or json_data.get("body")
+        event = json_data.get("webhookEvent", "").upper()
 
-        if event != "MESSAGE_RECEIVED":
-            return {"status": "ignored", "message": f"Unhandled event: {event}"}
+        if event != "MESSAGE_RECEIVED" and event != "":
+            # If event is missing, we still try to process it as a message if it has body/sender
+            if not (sender and body):
+                return {"status": "ignored", "message": f"Unhandled event or data: {event}"}
 
         if not sender or not body:
-            return {"status": "error", "message": "Missing sender or message"}
+            return {"status": "error", "message": "Missing sender or message content"}
+
+        sender = str(sender).strip()
+        body = str(body).strip()
 
         # Process and generate AI response
         response_msg = handle_incoming_sms(sender, body)
