@@ -119,12 +119,16 @@ def handle_incoming_sms(caller_phone: str, message: str) -> str:
     signals = signals_res.data if signals_res.data else []
     routine = routine_res.data[0] if routine_res.data else {}
     
+    # Get all links for this caller to find the correct nickname
+    links_res = db.table("caller_dear_one_links").select("*").eq("caller_id", caller_id).execute()
+    
     # Get nickname from link for more personal status header
     matched_link = None
-    for link in links.data:
-        if link['dear_one_id'] == dear_one_id:
-            matched_link = link
-            break
+    if links_res.data:
+        for link in links_res.data:
+            if link['dear_one_id'] == dear_one_id:
+                matched_link = link
+                break
     
     display_name = matched_link['nickname'] if matched_link else "Device"
 
