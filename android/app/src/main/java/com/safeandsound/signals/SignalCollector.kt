@@ -13,8 +13,6 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.app.usage.UsageEvents
-import android.app.usage.UsageStatsManager
 import kotlinx.coroutines.*
 import com.safeandsound.api.RetrofitClient
 import com.safeandsound.api.SignalPacket
@@ -127,9 +125,9 @@ class SignalCollector(private val context: Context) : SensorEventListener {
 
         // App Usage removed by user request
 
-        // Timestamp
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply { 
-            timeZone = TimeZone.getTimeZone("UTC")
+        // Timestamp configured strictly to IST (UTC+05:30)
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).apply { 
+            timeZone = TimeZone.getTimeZone("Asia/Kolkata")
         }
         val currentTimestamp = sdf.format(Date())
 
