@@ -119,9 +119,18 @@ def handle_incoming_sms(caller_phone: str, message: str) -> str:
     signals = signals_res.data if signals_res.data else []
     routine = routine_res.data[0] if routine_res.data else {}
     
+    # Get nickname from link for more personal status header
+    matched_link = None
+    for link in links.data:
+        if link['dear_one_id'] == dear_one_id:
+            matched_link = link
+            break
+    
+    display_name = matched_link['nickname'] if matched_link else "Device"
+
     ai_response = generate_response(
         user_id=dear_one_id,
-        dear_one_nickname="Device",
+        dear_one_nickname=display_name,
         language="english",
         signals=signals,
         routine_profile=routine,
