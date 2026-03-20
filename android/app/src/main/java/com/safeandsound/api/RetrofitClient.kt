@@ -53,8 +53,7 @@ data class SignalPacket(
     @SerializedName("is_headphone_plugged") val isHeadphonePlugged: Boolean,
     @SerializedName("ambient_light") val ambientLight: String,
     @SerializedName("phone_orientation") val phoneOrientation: String,
-    @SerializedName("proximity") val proximity: String,
-    @SerializedName("last_app_used") val lastAppUsed: String
+    @SerializedName("proximity") val proximity: String
 )
 
 data class SignalResponse(

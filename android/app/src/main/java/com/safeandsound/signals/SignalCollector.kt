@@ -125,25 +125,7 @@ class SignalCollector(private val context: Context) : SensorEventListener {
         val orientation = if (Math.abs(lastAccelValues[2]) > 8.5) "FLAT" else "TILTED"
         val prox = if (lastProximityValue < 1f) "NEAR" else "FAR"
 
-        // 6. App Usage (Privacy Preserved, sending package name only to backend)
-        var lastAppUsed = ""
-        try {
-            val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-            val endTime = System.currentTimeMillis()
-            val startTime = endTime - 1000 * 60 * 10 // 10 mins back
-            val usageEvents = usageStatsManager.queryEvents(startTime, endTime)
-            var lastPkg = ""
-            if (usageEvents != null) {
-                val event = UsageEvents.Event()
-                while (usageEvents.hasNextEvent()) {
-                    usageEvents.getNextEvent(event)
-                    if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
-                        lastPkg = event.packageName
-                    }
-                }
-            }
-            lastAppUsed = lastPkg
-        } catch (e: Exception) { }
+        // App Usage removed by user request
 
         // Timestamp
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply { 
@@ -167,8 +149,7 @@ class SignalCollector(private val context: Context) : SensorEventListener {
             isHeadphonePlugged = headphonesOn,
             ambientLight = lightLevel,
             phoneOrientation = orientation,
-            proximity = prox,
-            lastAppUsed = lastAppUsed
+            proximity = prox
         )
         
         try {

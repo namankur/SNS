@@ -86,7 +86,6 @@ def generate_response(
     light = latest_signal.get('ambient_light', 'NORMAL')
     orientation = latest_signal.get('phone_orientation', 'FLAT')
     proximity = latest_signal.get('proximity', 'FAR')
-    last_app = latest_signal.get('last_app_used', '')
     
     # Check if this is a missed call fallback situation
     missed_call_time = None
@@ -112,19 +111,19 @@ def generate_response(
     walk_days = ", ".join(routine_profile.get('walk_days', ['MON','WED','FRI'])) if routine_profile else 'MON, WED, FRI'
     
     if ai_offline:
-        app_info = f"Used app: {last_app}" if last_app else "No recent app"
         context_info = f"Room: {light}, Mode: {orientation}"
+        
+        # Format a beautifully simple native Hindi text since AI is offline
+        batt_str = f"aur charging par hai" if charging_status == "Charging" else ""
+        dnd_str = "DND mode" if latest_signal.get('dnd_active') else "Normal mode"
+        
         return (
-            f"Status Update for {dear_one_nickname}:\n\n"
-            f"Last Synced: {synced_at}\n"
-            f"Phone active: {last_active_mins} mins ago\n"
-            f"Context: {context_info}\n"
-            f"Activity: {movement} ({app_info})\n"
-            f"Battery: {battery}% ({charging_status})\n"
-            f"Network: {network}\n"
-            f"Ringer/DND: {ringer_mode} ({ringer_vol}%)\n"
-            f"Headphones: {headphones}\n"
-            f"Trend: {score_label}"
+            f"Namaste, {dear_one_nickname} ka phone check kiya gaya hai:\n\n"
+            f"- Aakhri baar {last_active_mins} minute pehle screen on thi\n"
+            f"- Battery {battery}% hai {batt_str}\n"
+            f"- Phone abhi {dnd_str} mein hai (Ringer {ringer_vol}%)\n"
+            f"- Data sync time: {synced_at}\n\n"
+            f"Note: Sab generally {score_label} lag raha hai. Aap chaho toh unhe call kar sakte ho."
         )
     
     system_prompt = '''You are a warm, caring assistant helping a worried 
@@ -163,7 +162,6 @@ Deviation from normal: {score_label} ({deviation_score})
 
 Latest signals:
 - Phone last active: {last_active_mins} minutes ago
-- Last app used: {last_app}
 - Room brightness: {light}
 - Phone orientation: {orientation}
 - Proximity: {proximity}

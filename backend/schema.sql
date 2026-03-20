@@ -41,17 +41,13 @@ CREATE TABLE signals (
     ringer_mode TEXT DEFAULT 'NORMAL', -- NORMAL/VIBRATE/SILENT
     ringer_volume INTEGER DEFAULT 50, -- 0-100
     is_headphone_plugged BOOLEAN DEFAULT FALSE,
-    last_app_used TEXT DEFAULT '',
     synced_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Migration script (Run this in Supabase SQL Editor to update live database):
--- ALTER TABLE signals 
 -- ADD COLUMN ringer_mode TEXT DEFAULT 'NORMAL',
 -- ADD COLUMN ringer_volume INTEGER DEFAULT 50,
--- ADD COLUMN is_headphone_plugged BOOLEAN DEFAULT FALSE,
--- ADD COLUMN last_app_used TEXT DEFAULT '';
--- ALTER TABLE signals DROP COLUMN IF EXISTS wifi_ssid;
+-- ADD COLUMN is_headphone_plugged BOOLEAN DEFAULT FALSE;
+-- ALTER TABLE signals DROP COLUMN IF EXISTS wifi_ssid, DROP COLUMN IF EXISTS last_app_used;
 
 -- Table: routine_profiles
 CREATE TABLE routine_profiles (

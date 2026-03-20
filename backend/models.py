@@ -38,7 +38,6 @@ class SignalCreate(BaseModel):
     ambient_light: str = "NORMAL" # DARK, NORMAL, BRIGHT
     phone_orientation: str = "FLAT" # FLAT, TILTED
     proximity: str = "FAR" # NEAR, FAR
-    last_app_used: str = ""
 
 class LinkFamilyRequest(BaseModel):
     dear_one_phone: str
