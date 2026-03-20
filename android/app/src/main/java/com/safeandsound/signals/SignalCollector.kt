@@ -69,20 +69,6 @@ class SignalCollector(private val context: Context) : SensorEventListener {
     }
     
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-
-    private fun getAppCategory(packageName: String): String {
-        val p = packageName.lowercase()
-        return when {
-            p.contains("whatsapp") || p.contains("messenger") || p.contains("tele") || p.contains("viber") -> "COMMUNICATION"
-            p.contains("facebook") || p.contains("insta") || p.contains("twitter") || p.contains("tik") || p.contains("snap") -> "SOCIAL"
-            p.contains("youtube") || p.contains("netflix") || p.contains("spotify") || p.contains("prime") || p.contains("music") -> "ENTERTAINMENT"
-            p.contains("health") || p.contains("fit") || p.contains("medi") || p.contains("doc") -> "HEALTH"
-            p.contains("bank") || p.contains("pay") || p.contains("wallet") || p.contains("finance") -> "FINANCE"
-            p.isEmpty() -> "NONE"
-            else -> "UTILITY"
-        }
-    }
-    
     private suspend fun collectAndSend() {
         val phone = SharedPrefsHelper.getPhoneNumber(context) ?: return
         
@@ -115,6 +101,9 @@ class SignalCollector(private val context: Context) : SensorEventListener {
         val lastActive = SharedPrefsHelper.getLastActiveTime(context)
         val diffMins = (System.currentTimeMillis() - lastActive) / (1000 * 60)
         
+        val interactionSdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val lastInteractionTimeStr = if (lastActive > 0) interactionSdf.format(Date(lastActive)) else ""
+        
         // 4. Audio (Ringer & Headphones)
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val ringerModeStr = when (audioManager.ringerMode) {
@@ -136,8 +125,8 @@ class SignalCollector(private val context: Context) : SensorEventListener {
         val orientation = if (Math.abs(lastAccelValues[2]) > 8.5) "FLAT" else "TILTED"
         val prox = if (lastProximityValue < 1f) "NEAR" else "FAR"
 
-        // 6. App Usage (Mapping to categories for privacy)
-        var appCategory = "NONE"
+        // 6. App Usage (Privacy Preserved, sending package name only to backend)
+        var lastAppUsed = ""
         try {
             val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             val endTime = System.currentTimeMillis()
@@ -153,7 +142,7 @@ class SignalCollector(private val context: Context) : SensorEventListener {
                     }
                 }
             }
-            appCategory = getAppCategory(lastPkg)
+            lastAppUsed = lastPkg
         } catch (e: Exception) { }
 
         // Timestamp
@@ -167,7 +156,7 @@ class SignalCollector(private val context: Context) : SensorEventListener {
             timestamp = currentTimestamp,
             screenActiveLastMins = diffMins.toInt(),
             movementType = "STILL", 
-            lastInteractionTime = "",
+            lastInteractionTime = lastInteractionTimeStr,
             batteryLevel = batteryPct,
             isCharging = isCharging,
             isWifi = isWifi,
@@ -179,7 +168,7 @@ class SignalCollector(private val context: Context) : SensorEventListener {
             ambientLight = lightLevel,
             phoneOrientation = orientation,
             proximity = prox,
-            appCategory = appCategory
+            lastAppUsed = lastAppUsed
         )
         
         try {

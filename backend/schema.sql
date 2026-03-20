@@ -41,7 +41,6 @@ CREATE TABLE signals (
     ringer_mode TEXT DEFAULT 'NORMAL', -- NORMAL/VIBRATE/SILENT
     ringer_volume INTEGER DEFAULT 50, -- 0-100
     is_headphone_plugged BOOLEAN DEFAULT FALSE,
-    wifi_ssid TEXT DEFAULT '',
     last_app_used TEXT DEFAULT '',
     synced_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -51,8 +50,8 @@ CREATE TABLE signals (
 -- ADD COLUMN ringer_mode TEXT DEFAULT 'NORMAL',
 -- ADD COLUMN ringer_volume INTEGER DEFAULT 50,
 -- ADD COLUMN is_headphone_plugged BOOLEAN DEFAULT FALSE,
--- ADD COLUMN wifi_ssid TEXT DEFAULT '',
 -- ADD COLUMN last_app_used TEXT DEFAULT '';
+-- ALTER TABLE signals DROP COLUMN IF EXISTS wifi_ssid;
 
 -- Table: routine_profiles
 CREATE TABLE routine_profiles (

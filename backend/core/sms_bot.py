@@ -4,6 +4,8 @@ from .routine_engine import calculate_deviation_score, calculate_routine_profile
 from .ai_engine import generate_response
 from database import get_db
 
+IST = timezone(timedelta(hours=5, minutes=30))
+
 FREE_TIER_COOLDOWN_MINS = int(os.getenv("FREE_TIER_COOLDOWN_MINS", 60))
 PREMIUM_TIER_COOLDOWN_MINS = int(os.getenv("PREMIUM_TIER_COOLDOWN_MINS", 20))
 
@@ -48,7 +50,7 @@ def check_cooldown(caller_id: str, dear_one_id: str, tier: str) -> dict:
     last_check_time = None  # datetime object
     
     if last_check_time:
-        diff_mins = (datetime.now(timezone.utc) - last_check_time).total_seconds() / 60
+        diff_mins = (datetime.now(IST) - last_check_time).total_seconds() / 60
         if diff_mins < cooldown_mins:
             rem = int(cooldown_mins - diff_mins)
             return {
@@ -124,7 +126,7 @@ def handle_incoming_sms(caller_phone: str, message: str) -> str:
         signals=signals,
         routine_profile=routine,
         deviation_score=score,
-        current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        current_datetime=datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S")
     )
     
     # 5. Record request

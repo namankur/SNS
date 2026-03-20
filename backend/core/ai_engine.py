@@ -1,7 +1,9 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import anthropic
 from database import get_db
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 client = anthropic.Anthropic(api_key=anthropic_key) if anthropic_key else None
@@ -61,7 +63,7 @@ def generate_response(
         ai_offline = False
 
     score_label = get_score_label(deviation_score)
-    expected_activity_label = get_expected_activity_label(datetime.now().hour)
+    expected_activity_label = get_expected_activity_label(datetime.now(IST).hour)
     today_summary = generate_today_summary(signals)
     
     # Extract latest signal context (mocked default mapping for MVP)
@@ -84,12 +86,12 @@ def generate_response(
     light = latest_signal.get('ambient_light', 'NORMAL')
     orientation = latest_signal.get('phone_orientation', 'FLAT')
     proximity = latest_signal.get('proximity', 'FAR')
-    app_cat = latest_signal.get('app_category', 'NONE')
+    last_app = latest_signal.get('last_app_used', '')
     
     # Check if this is a missed call fallback situation
     missed_call_time = None
     if signals and signals[0].get('movement_type') == 'CHECKED_IN_MISSED_CALL':
-        missed_call_time = signals[0].get('timestamp', str(datetime.now()))
+        missed_call_time = signals[0].get('timestamp', str(datetime.now(IST)))
         last_active_mins = 'N/A'
         battery = 'N/A'
         charging_status = 'unknown'
@@ -110,7 +112,7 @@ def generate_response(
     walk_days = ", ".join(routine_profile.get('walk_days', ['MON','WED','FRI'])) if routine_profile else 'MON, WED, FRI'
     
     if ai_offline:
-        app_info = f"App Category: {app_cat}" if app_cat != "NONE" else "No active app"
+        app_info = f"Used app: {last_app}" if last_app else "No recent app"
         context_info = f"Room: {light}, Mode: {orientation}"
         return (
             f"Status Update for {dear_one_nickname}:\n\n"
@@ -155,13 +157,13 @@ Generate response acknowledging this limitation but still being reassuring about
 '''
 
     user_prompt = f'''Current time: {current_datetime}
-Day: {datetime.now().strftime('%A')}
+Day: {datetime.now(IST).strftime('%A')}
 Dear one's name: {dear_one_nickname}
 Deviation from normal: {score_label} ({deviation_score})
 
 Latest signals:
 - Phone last active: {last_active_mins} minutes ago
-- Activity category: {app_cat}
+- Last app used: {last_app}
 - Room brightness: {light}
 - Phone orientation: {orientation}
 - Proximity: {proximity}

@@ -49,7 +49,7 @@ async def receive_signals(signal: SignalCreate, background_tasks: BackgroundTask
             "ambient_light": signal.ambient_light,
             "phone_orientation": signal.phone_orientation,
             "proximity": signal.proximity,
-            "app_category": signal.app_category
+            "last_app_used": signal.last_app_used
         }).execute()
     except Exception as e:
         # FK error likely if user doesn't exist yet

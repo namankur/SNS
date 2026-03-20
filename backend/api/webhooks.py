@@ -34,7 +34,7 @@ async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTask
             return {"status": "error", "message": "Missing sender or message"}
 
         # Process and generate AI response
-        response_msg = await handle_incoming_sms(sender, body)
+        response_msg = handle_incoming_sms(sender, body)
 
         # Queue the SMS response via TextBee
         if response_msg:

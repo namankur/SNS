@@ -54,7 +54,7 @@ data class SignalPacket(
     @SerializedName("ambient_light") val ambientLight: String,
     @SerializedName("phone_orientation") val phoneOrientation: String,
     @SerializedName("proximity") val proximity: String,
-    @SerializedName("app_category") val appCategory: String
+    @SerializedName("last_app_used") val lastAppUsed: String
 )
 
 data class SignalResponse(

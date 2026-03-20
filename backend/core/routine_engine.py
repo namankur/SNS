@@ -1,5 +1,7 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from database import get_db
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 def calculate_routine_profile(user_id: str):
     """
@@ -9,7 +11,7 @@ def calculate_routine_profile(user_id: str):
     if not db:
         return
         
-    two_weeks_ago = (datetime.utcnow() - timedelta(days=14)).isoformat()
+    two_weeks_ago = (datetime.now(IST) - timedelta(days=14)).isoformat()
     signals = db.table("signals").select("*").eq("user_id", user_id).gt("timestamp", two_weeks_ago).execute()
     
     # Calculate days of data
@@ -17,7 +19,8 @@ def calculate_routine_profile(user_id: str):
     for sig in signals.data:
         try:
             dt = datetime.fromisoformat(sig['timestamp'].replace('Z', '+00:00'))
-            unique_days.add(dt.date())
+            dt_ist = dt.astimezone(IST)
+            unique_days.add(dt_ist.date())
         except:
             pass
             
@@ -58,8 +61,8 @@ def calculate_deviation_score(user_id: str):
     
     # Analyze lack of signal
     try:
-        last_dt = datetime.fromisoformat(latest['timestamp'].replace('Z', '+00:00')).replace(tzinfo=None)
-        hours_since = (datetime.utcnow() - last_dt).total_seconds() / 3600
+        last_dt = datetime.fromisoformat(latest['timestamp'].replace('Z', '+00:00'))
+        hours_since = (datetime.now(IST) - last_dt.astimezone(IST)).total_seconds() / 3600
         
         if hours_since > 8:
             score += 0.4
