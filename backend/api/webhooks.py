@@ -24,6 +24,20 @@ async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTask
         json_data = await request.json()
         print(f"WEBHOOK RECEIVED: {json_data}") # Visible in Railway logs
         
+        # EMERGENCY DEBUG LOGGING: Store raw JSON in check_requests to see it in the DB
+        try:
+            db = get_db()
+            if db:
+                db.table("check_requests").insert({
+                    "caller_id": "2c217458-8368-4535-9742-0519e309def3", # Namankur
+                    "dear_one_id": "25406b16-4af3-4325-a534-095e4e5b0378", # Papa
+                    "response_generated": f"DEBUG_RAW_WEBHOOK: {str(json_data)}",
+                    "deviation_score": 0,
+                    "tier": "debug"
+                }).execute()
+        except Exception as log_e:
+            print(f"DEBUG LOGGING FAILED: {log_e}")
+        
         # Robust field extraction
         sender = json_data.get("sender") or json_data.get("from") or json_data.get("phone")
         body = json_data.get("message") or json_data.get("text") or json_data.get("body")
