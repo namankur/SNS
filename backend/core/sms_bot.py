@@ -121,8 +121,8 @@ def handle_incoming_sms(caller_phone: str, message: str) -> str:
     
     ai_response = generate_response(
         user_id=dear_one_id,
-        dear_one_nickname="Ji",
-        language="hindi",
+        dear_one_nickname="Device",
+        language="english",
         signals=signals,
         routine_profile=routine,
         deviation_score=score,

@@ -111,41 +111,30 @@ def generate_response(
     walk_days = ", ".join(routine_profile.get('walk_days', ['MON','WED','FRI'])) if routine_profile else 'MON, WED, FRI'
     
     if ai_offline:
-        context_info = f"Room: {light}, Mode: {orientation}"
-        
-        # Format a beautifully simple native Hindi text since AI is offline
-        batt_str = f"aur charging par hai" if charging_status == "Charging" else ""
-        dnd_str = "DND mode" if latest_signal.get('dnd_active') else "Normal mode"
-        
         return (
-            f"Namaste, {dear_one_nickname} ka phone check kiya gaya hai:\n\n"
-            f"- Aakhri baar {last_active_mins} minute pehle screen on thi\n"
-            f"- Battery {battery}% hai {batt_str}\n"
-            f"- Phone abhi {dnd_str} mein hai (Ringer {ringer_vol}%)\n"
-            f"- Data sync time: {synced_at}\n\n"
-            f"Note: Sab generally {score_label} lag raha hai. Aap chaho toh unhe call kar sakte ho."
+            f"Device Status: {dear_one_nickname}\n\n"
+            f"• Last Active: {last_active_mins}m ago\n"
+            f"• Battery: {battery}% ({charging_status})\n"
+            f"• Network: {network}\n"
+            f"• Audio: {ringer_mode} (Vol: {ringer_vol}%)\n"
+            f"• DND Status: {dnd_status}\n"
+            f"• Environment: {light} | {orientation} | {proximity}\n"
+            f"• Headphones: {headphones}\n"
+            f"• Movement: {movement}\n\n"
+            f"Last Synced: {synced_at}"
         )
     
-    system_prompt = '''You are a warm, caring assistant helping a worried 
-family member understand if their elderly loved one 
-is okay. You have access to passive phone signals 
-(NOT location, NOT messages, NOT call logs).
+    system_prompt = '''You are a clean, minimalist Apple-style system assistant generating a device status report.
+You have access to device telemetry signals. 
 
 Rules:
-1. Always start with emotional reassurance first
-2. Explain WHY they did not answer in human terms
-3. Never use technical words like 'accelerometer', 
-   'API', 'signal', 'algorithm', 'deviation score'
-4. Always end with a clear next action
-5. Keep response under 60 words
-6. If deviation_score > 0.6, gently suggest 
-   checking urgently without causing panic
-7. If language is hindi, respond in simple Hindi 
-   (not formal, like talking to family)
-8. Use emoji sparingly — only 1-2 max
-9. Never make up information not in the signals
-10. If data is old (>3 hours), be honest about it'''
-
+1. Output in English ONLY. Never use Hindi, never use terms like 'Ji', 'Namaste', or cultural honorifics.
+2. Format as a clean, highly readable bulleted list (using •) exactly like an iOS system alert.
+3. You MUST include ALL available signal parameters from the prompt in the list.
+4. No emotional reassurance, no conversational filler, no emojis. Keep it sterile, professional, and data-driven.
+5. Provide a one sentence "Trend" at the bottom based on the deviation score and routine.
+6. If data is old (>3 hours), append a "Warning: Stale data" line.'''
+    
     missed_call_clause = ""
     if missed_call_time:
         missed_call_clause = f'''

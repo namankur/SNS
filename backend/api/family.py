@@ -55,9 +55,9 @@ async def link_family(req: LinkFamilyRequest, caller_id: str = Depends(get_curre
 
     apk_link = "https://awqhrmnfxsdqospuiamm.supabase.co/storage/v1/object/public/releases/app-debug.apk"
     message_body = (
-        f"Namaste {req.nickname} ji, "
-        f"{caller_name} ne aapke liye Safe & Sound app setup kiya hai. "
-        f"Install karein: {apk_link}"
+        f"Hello {req.nickname}, "
+        f"{caller_name} has invited you to set up the Safe & Sound app. "
+        f"Install here: {apk_link}"
     )
 
     sms_status = "no_textbee_config"
@@ -113,7 +113,7 @@ async def manual_check(dear_one_nickname: str, caller_id: str = Depends(get_curr
     ai_response = generate_response(
         user_id=dear_one_id,
         dear_one_nickname=dear_one_nickname,
-        language="hindi",
+        language="english",
         signals=signals,
         routine_profile=routine,
         deviation_score=score,
