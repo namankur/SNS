@@ -26,7 +26,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(signals.router)
 app.include_router(family.router)
-app.include_router(webhooks.router)
+app.include_router(webhooks.router, prefix="/api")
 
 
 @app.get("/")
