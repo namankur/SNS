@@ -3,7 +3,7 @@ import asyncio
 
 async def test_prod_webhook():
     # The production backend URL
-    url = "https://sns-production-a328.up.railway.app/webhook/sms"
+    url = "https://sns-production-a328.up.railway.app/api/webhook/sms"
     
     # Mock TextBee payload
     # Sending from Namankur's registered phone (6360168288)
