@@ -21,7 +21,6 @@ async def textbee_sms_webhook(request: Request, background_tasks: BackgroundTask
     TextBee incoming SMS Webhook.
     """
     try:
-    try:
         json_data = await request.json()
         print(f"WEBHOOK RECEIVED: {json_data}") # Visible in Railway logs
         
